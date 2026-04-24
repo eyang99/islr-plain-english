@@ -104,7 +104,30 @@
     <p>Any time you ask your data many questions, the answers need multiple-testing correction to be trusted.</p>
   </div>
 
-  <h2>7. Permutation tests — a computational alternative</h2>
+  <h2>7. Famous probability fallacies in the wild</h2>
+  <div class="concept">
+    <p>Multiple testing isn't a lab-only concern. Most high-profile "unlikely" events are the product of running the test enough times. Three cases from Charles Wheelan's <em>Naked Statistics</em> worth carrying in your head:</p>
+
+    <h3>The prosecutor's fallacy</h3>
+    <p>A DNA sample from a crime scene matches the defendant's. The prosecutor testifies that the probability of a random match is one in a million. Case closed?</p>
+    <p>Not quite. There are two scenarios:</p>
+    <ul>
+      <li><strong>Case A:</strong> the suspect was arrested near the scene with the murder weapon and compelled to give DNA. <em>One test.</em> 1-in-a-million match is damning.</li>
+      <li><strong>Case B:</strong> the DNA was run against a national database of a million past offenders and hit a name. <em>One million tests.</em> You'd expect roughly <em>one</em> random match by chance alone. The hit proves nothing.</li>
+    </ul>
+    <p>Same probability, same evidence — totally different meanings. The number of tests behind the match is the missing context.</p>
+
+    <h3>Clusters happen</h3>
+    <p>A town reads that five neighbors have developed the same rare cancer. The water? The power line? Sometimes, yes. But "five people in one zip code" out of tens of thousands of zip codes isn't surprising at all — it's the natural result of running the "rare event" lottery millions of times. Every newspaper cluster story needs a base rate you almost never get.</p>
+    <div class="analogy">A classroom flips coins. After six rounds, one student is still standing, having flipped six tails in a row. Her chance of doing that was 1/64 — but with 40 students flipping, the chance <em>someone</em> would get a streak like that is nearly certain. Out of context, we reach for a cause.</div>
+
+    <h3>VaR and the Black Swan</h3>
+    <p>Pre-2008, Wall Street risk managers used Value at Risk (VaR) models that reported, daily, the maximum expected loss "with 99% confidence." The number looked precise. It sat on executive desks at 4:15 p.m. Reassuring.</p>
+    <p>Two problems. First, the models were fit on 1980–2005 data — a stretch with no serious housing crash, so they assigned near-zero probability to exactly the event that followed. Second, the 99% number said nothing about the 1%. As David Einhorn put it: "This is like an air bag that works all the time, except when you have a car accident."</p>
+    <div class="callout warn">The lesson isn't "multiple testing caused the financial crisis." It's that <strong>a precise-looking probability fit on the wrong reference set is worse than no probability at all</strong>. It buys you confidence you haven't earned. In ML, every time you trust a train/test metric without asking whether the test set looks like deployment, you're running the same play.</div>
+  </div>
+
+  <h2>8. Permutation tests — a computational alternative</h2>
   <div class="concept">
     <p>Parametric tests rely on distributional assumptions. Permutation tests don't. If your null is "treatment and control are from the same distribution," shuffle the labels many times and recompute your statistic. The fraction of shuffles with a statistic at least as extreme as yours is your p-value — no distributional assumption needed.</p>
     <p>Works great for multiple testing too: permute and recompute <em>the maximum statistic across all tests</em>, giving a null distribution for the max. Rejections at that threshold automatically control FWER, even under dependence.</p>

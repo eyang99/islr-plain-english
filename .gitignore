@@ -1,5 +1,7 @@
 .DS_Store
 *.log
+*.pdf
+naked-statistics.txt
 .vscode/
 .idea/
 node_modules/

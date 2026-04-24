@@ -131,6 +131,43 @@
     <p>Takeaway: "simpler" wins more often than you'd expect, especially in high dimensions.</p>
   </div>
 
+  <h2>9. The mandatory warning label</h2>
+  <div class="concept">
+    <p>Charles Wheelan (<em>Naked Statistics</em>) calls regression "the hydrogen bomb of the statistics arsenal" — enormously powerful, easy to misuse, and capable of doing real damage in the wrong hands.</p>
+
+    <div class="callout warn">
+      <strong>The estrogen story.</strong> Through the 1990s, a 122,000-person observational study (the Nurses' Health Study) showed women on estrogen supplements had one-third the heart attacks. By 2001, ~15 million women were on hormone replacement therapy. Then randomized clinical trials ran and showed the opposite — estrogen <em>raised</em> risk of heart disease, stroke, blood clots, and breast cancer. <em>New York Times Magazine</em>'s estimate of premature deaths and serious adverse events from a regression-driven recommendation: "tens of thousands." The rule isn't "regression is bad." It's: <strong>a regression coefficient is a correlation, not a cause. Clinical trials are the correction.</strong>
+    </div>
+
+    <p>Here are six traps that do most of the damage:</p>
+
+    <h3>i. Fitting a line to something that isn't a line</h3>
+    <p>Regression returns a single slope even when the true relationship bends. The computer never complains. You get a confident answer for a question the data can't answer.</p>
+    <div class="analogy">A warning label for regression would read: <strong>Do not use when the underlying relationship isn't linear.</strong> It's the hair dryer in the bathtub — the appliance works, you just shouldn't use it here.</div>
+
+    <h3>ii. Correlation vs causation (spurious edition)</h3>
+    <p>Include Chinese per-capita income as a predictor of US autism rates and you'll get a strong, "statistically significant" positive coefficient. Both have been rising for twenty years. Neither causes the other. Any two trending series will produce a fake relationship.</p>
+
+    <h3>iii. Reverse causality</h3>
+    <p>A regression finds that more golf lessons predict <em>worse</em> scores. Does taking lessons ruin your swing? More likely: you sign up for lessons <em>because</em> you're playing poorly. The arrow points the other way. When you can't justify the direction from outside the data, the coefficient is a ouija board.</p>
+    <div class="analogy">Don't use as an explanatory variable anything that might be caused by the thing you're trying to explain. "Does reducing unemployment boost GDP?" is a trap — GDP growth is what reduces unemployment.</div>
+
+    <h3>iv. Omitted variable bias</h3>
+    <p>Run a regression of test scores on school spending. You'll find a big, significant positive coefficient. Policy implication: spend more, scores go up. But wealthy districts spend more <em>and</em> send kids with educated parents to school. Leave parental education out of the equation and "school spending" picks up its effect — you're measuring two things, reporting one.</p>
+    <p>The same trap explains "golfers get more heart disease" headlines: old people play more golf; old people get more heart disease. Control for age and the effect reverses.</p>
+    <div class="callout">An omitted variable inside the coefficient is the single most common way a regression lies. The fix is domain knowledge, not bigger data. Bigger data just gives you a more confidently wrong coefficient.</div>
+
+    <h3>v. Extrapolating beyond the data</h3>
+    <p>A regression fit on adults is only valid for adults. Wheelan's model, trained on the Changing Lives dataset of grown-ups, predicts that his newborn daughter should have weighed <strong>−19.6 pounds</strong>. (She weighed 8½.) The model wasn't broken; it was being asked a question nothing in its training set could answer.</p>
+    <div class="callout warn">In ML language: your model is only valid over the support of its training distribution. Outside that support, predictions aren't "uncertain" — they're unjustified.</div>
+
+    <h3>vi. Data mining (too many knobs)</h3>
+    <p>Shove 50 predictors into a regression with no theory and one or two will cross p &lt; 0.05 by pure chance. Flip enough coins and someone in the room will flip six tails in a row — not because they're talented, but because you ran the test a lot.</p>
+    <p>John Ioannidis, reviewing 49 of the most-cited medical studies in top journals, found roughly one-third were later refuted. His estimate for biomedical research overall: about half of published findings are wrong. Chapter 13 is the honest answer to this problem.</p>
+
+    <p class="tagline">Designing the regression matters more than the math. Think hard about what variables belong, what's missing, which direction the arrow runs. The arithmetic is the easy part.</p>
+  </div>
+
   <div class="flashcards" tabindex="0">
     <h2>Flashcards</h2>
     <div class="flashcard"><span class="fc-label">1</span>
