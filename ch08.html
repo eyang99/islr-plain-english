@@ -179,10 +179,60 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">Why does random forest typically outperform plain bagging on the same data?</div>
-  <div class="prompt">Your boosting model's training error keeps dropping and test error is also dropping. Can you just keep adding trees until you're satisfied? What stops you?</div>
-  <div class="prompt">You have a tabular dataset with 20 features and need to deploy a predictor. Would you rather ship a random forest or a gradient boosted model? What do you weigh?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Trees are the ensemble-building block that still wins most Kaggle tabular leaderboards.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.447" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute (variance reduction)</span>
+      <p class="qz-prompt">You average $B$ independent predictions, each with variance $\sigma^2$. The variance of the average is $\sigma^2 / B$. If $B = 5$, what factor does the standard deviation reduce by compared to a single prediction?</p>
+      <input class="qz-input" type="text" placeholder="factor (standard deviation ratio)" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$\sigma_{\text{avg}} / \sigma = 1/\sqrt{B} = 1/\sqrt{5} \approx \mathbf{0.447}$. Averaging 5 uncorrelated trees cuts standard deviation by about 55%. This is bagging's whole logic — <em>but</em> it requires low correlation among trees, which is why random forests force decorrelation with random feature subsets (next question).</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">Why does random forest typically outperform plain bagging on the same data?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Bagging averages trees trained on bootstrap samples. Those trees are correlated — every tree sees most of the same data and tends to split on the same dominant predictor first. Correlation limits variance reduction: averaging correlated random variables only helps so much. Random forests force <em>decorrelation</em> by restricting each split to a random subset of $m$ features out of $p$. This prevents any single strong predictor from dominating every tree, lowering correlation across trees, and thus lowering the variance of the ensemble. The cost is slightly higher bias per tree, easily repaid by the variance win.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>bagging trees are correlated; $m &lt; p$ decorrelates them; $\rho \downarrow \Rightarrow \text{Var} \downarrow$.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Your boosting model's training error keeps dropping <em>and</em> test error is also dropping. Can you just keep adding trees until you're satisfied? What stops you?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Boosting <em>can</em> overfit — unlike bagging, more trees ≠ always better. Each boosting iteration focuses on residuals, so with enough iterations the model starts fitting noise. Test error often decreases, flattens, then rises. What stops you: you pick the number of trees $M$ by cross-validation on held-out data, or use early stopping on a validation set. Also tune learning rate $\nu$: smaller $\nu$ (say 0.01) with more trees usually generalizes better than a large $\nu$ with fewer trees, at a compute cost.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>boosting can overfit; pick M via CV / early stopping; small $\nu$ + many trees.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">You have a tabular dataset with 20 features and need to deploy a predictor. Would you rather ship a random forest or a gradient boosted model? What do you weigh?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>GBM usually wins raw predictive accuracy on small-to-medium tabular data. Random forests win on simplicity: they're parallel-trainable, have fewer hyperparameters, are harder to overfit, and give decent accuracy with almost no tuning. What you weigh: <strong>accuracy requirements</strong> (is 1–2% worth the tuning effort?), <strong>training cost and retraining cadence</strong>, <strong>latency at inference</strong> (RF can be bigger in memory but trivially parallel), <strong>team expertise</strong> (GBM needs someone who reads learning curves), and <strong>stability in production</strong> (RF degrades more gracefully on distribution shift). Default to GBM if you have the tuning muscle; default to RF if you need a model to ship today and forget about.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>GBM = accuracy with tuning; RF = robustness, parallel training, low-effort; match to team and stakes.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch07.html">← Ch 7</a>

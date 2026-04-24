@@ -164,9 +164,53 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">A coworker says "deep learning is always better." You have 2,000 rows, 15 features, and a deadline. What do you push back with?</div>
-  <div class="prompt">Your training loss drops to zero but test loss rises. Name three things you'd try, and what each is doing to fix it.</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Neural nets are universal function approximators. They are not universally appropriate.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="101770" data-tolerance="5">
+      <span class="qz-num">Question 1 · compute (parameters)</span>
+      <p class="qz-prompt">A fully-connected network has input dimension 784 (e.g., 28×28 pixels), one hidden layer of 128 ReLU units, and output layer of 10 (softmax). Including biases, how many trainable parameters?</p>
+      <input class="qz-input" type="text" placeholder="parameters" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>Layer 1: $784 \cdot 128 + 128 = 100{,}480$ weights + biases. Layer 2: $128 \cdot 10 + 10 = 1{,}290$. Total: $\mathbf{101{,}770}$ parameters — for a very small network on tiny images. Scale this up and you quickly see why overfitting is the default failure mode and regularization is mandatory.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">A coworker says "deep learning is always better." You have 2,000 rows, 15 features, and a deadline. What do you push back with?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Deep learning dominates when the data is high-dimensional and highly structured (images, text, audio) and you have enough of it to offset massive parameter counts. On 2,000 rows of 15 tabular features, a well-tuned gradient boosted model will equal or beat a neural net every time, train in minutes, need no GPU, and be easier to debug and explain. The specific pushback: (1) no inductive bias to exploit — tabular features are not translation-invariant pixels or sequences; (2) tiny $n$ relative to net capacity means severe overfitting risk; (3) time cost on the deadline outweighs any tiny accuracy gain; (4) stakeholders will ask why, and a tree model's feature importances are answerable.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>tabular + small $n$ ⇒ GBM wins; deep learning needs structure + scale; ship-ability matters.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Your training loss drops to zero but test loss rises. Name three things you'd try, and what each is doing to fix it.</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Classic overfitting. Three fixes:</p>
+        <ol>
+          <li><strong>Dropout</strong> — during training, randomly zero out a fraction of activations. Forces the network to not rely on any single unit, effectively training an ensemble of sub-networks.</li>
+          <li><strong>Weight decay</strong> (L2 regularization) — add a penalty on the sum of squared weights. Shrinks all parameters toward zero, reducing effective capacity.</li>
+          <li><strong>Early stopping</strong> — monitor validation loss during training; stop when it starts rising. The cheapest regularizer there is; it caps the effective number of steps the optimizer takes away from the initialization.</li>
+        </ol>
+        <p>Others worth naming: more data, data augmentation, smaller model, batch normalization. But the above three are the table stakes.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch09.html">← Ch 9</a>

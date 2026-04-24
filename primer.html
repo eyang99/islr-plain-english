@@ -283,10 +283,64 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">Explain the CLT to a friend without using the word "distribution."</div>
-  <div class="prompt">Your friend says "p &lt; 0.05 means there's a 95% chance my result is real." Correct them in two sentences.</div>
-  <div class="prompt">Why does standard error shrink with √n, not with n? What does that mean practically for how much data you need?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Type your answer, then check. Numeric inputs accept fractions (1/3) and percents (12.5%). For explain questions, write yours fully before revealing the model answer.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.090" data-tolerance="0.008">
+      <span class="qz-num">Question 1 · compute</span>
+      <p class="qz-prompt">A disease has prevalence 1 in 1000. A test has 99% sensitivity ($P(+ \mid \text{disease})$) and 99% specificity ($P(- \mid \text{no disease})$). You test positive. What is $P(\text{disease} \mid +)$?</p>
+      <input class="qz-input" type="text" placeholder="probability (0–1 or %)" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>Bayes: $P(D \mid +) = \dfrac{P(+ \mid D)\,P(D)}{P(+)}$ where $P(+) = P(+ \mid D)\,P(D) + P(+ \mid \neg D)\,P(\neg D)$.</p>
+        <p>$P(+) = 0.99 \cdot 0.001 + 0.01 \cdot 0.999 = 0.00099 + 0.00999 = 0.01098$.</p>
+        <p>$P(D \mid +) = 0.00099 / 0.01098 \approx 0.090$, or about <strong>9%</strong>. A rare condition + a highly accurate test still leaves you mostly probably healthy. The prior dominates.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="compute" data-answer="4" data-tolerance="0.01">
+      <span class="qz-num">Question 2 · compute</span>
+      <p class="qz-prompt">Standard error of the sample mean is $SE = \sigma / \sqrt{n}$. By what factor must you multiply $n$ to cut your SE in half?</p>
+      <input class="qz-input" type="text" placeholder="factor" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>SE shrinks as $1/\sqrt{n}$, so halving SE requires $\sqrt{n}$ to double, which requires $n$ to <strong>quadruple</strong>. Doubling your data doesn't double your precision — it improves it by $\sqrt{2} \approx 1.41\times$.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Explain the Central Limit Theorem to a friend without using the word "distribution."</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Pull a bunch of numbers from any process — fair coins, weirdly skewed reaction times, anything — and take their average. That average is itself a random number; a fresh sample gives a different one. Do this many times and plot the histogram of all those averages. As you put more numbers into each average, the histogram converges to a bell curve — every single time, no matter how ugly the underlying process was. That's why means behave nicely even when the things being averaged don't, and it's the reason we can put confidence intervals around almost any estimate.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>averages, not raw values; bell shape emerges regardless of input shape; more data per average = closer to bell.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">Your friend says "p &lt; 0.05 means there's a 95% chance my result is real." Correct them.</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>A p-value is $P(\text{data this extreme} \mid H_0 \text{ true})$, not $P(H_0 \text{ false} \mid \text{data})$. The two are only connected through Bayes' rule, which requires a prior on how likely the claim is. A statistically significant but wildly implausible claim (say, "this crystal cured my cold") is still probably wrong, because the prior swamps the p-value. Small p is necessary for a claim, not sufficient.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>p = P(data | null), not P(null | data); prior matters; significance ≠ truth.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="index.html">← Home</a>

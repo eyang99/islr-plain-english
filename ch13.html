@@ -178,10 +178,71 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You analyze a 20-gene panel and find one gene with p = 0.03. Your PI says "publish." What do you say?</div>
-  <div class="prompt">You run 10 A/B tests. Two come back significant at p &lt; 0.05. Your PM wants to ship both. What's your response?</div>
-  <div class="prompt">Explain to a non-statistician friend why testing 100 coin flips is different from testing 1.</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">The math of not fooling yourself when you run a lot of tests.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.0025" data-tolerance="0.0001">
+      <span class="qz-num">Question 1 · compute (Bonferroni)</span>
+      <p class="qz-prompt">You run $m = 20$ hypothesis tests and want to control FWER at $\alpha = 0.05$ via Bonferroni. What p-value threshold must each individual test beat?</p>
+      <input class="qz-input" type="text" placeholder="threshold" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$\alpha / m = 0.05 / 20 = \mathbf{0.0025}$. Any test with $p &lt; 0.0025$ can be rejected with family-wise error controlled at 0.05. At $m = 1000$ the threshold drops to 0.00005 — brutal, which is exactly why BH (FDR) exists.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="compute" data-answer="4" data-tolerance="0.01">
+      <span class="qz-num">Question 2 · compute (Benjamini-Hochberg)</span>
+      <p class="qz-prompt">Your sorted p-values from $m = 5$ tests are $[0.001, 0.008, 0.04, 0.05, 0.2]$. Apply BH at target FDR $q = 0.1$. How many hypotheses do you reject?</p>
+      <input class="qz-input" type="text" placeholder="count" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>Thresholds are $q \cdot i / m = 0.1 \cdot i / 5$ for $i = 1, \ldots, 5$, giving $[0.02, 0.04, 0.06, 0.08, 0.10]$.</p>
+        <p>Compare:</p>
+        <ul>
+          <li>$p_{(1)} = 0.001 \leq 0.02$ ✓</li>
+          <li>$p_{(2)} = 0.008 \leq 0.04$ ✓</li>
+          <li>$p_{(3)} = 0.04 \leq 0.06$ ✓</li>
+          <li>$p_{(4)} = 0.05 \leq 0.08$ ✓</li>
+          <li>$p_{(5)} = 0.2 \leq 0.10$ ✗</li>
+        </ul>
+        <p>The largest $i$ that passes is $i = 4$, so reject ranks 1–4. <strong>Answer: 4 rejections.</strong> Note that $p_{(4)} = 0.05$ is rejected here even though raw $p = 0.05$ wouldn't pass Bonferroni.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">You analyze a 20-gene panel and find one gene with $p = 0.03$. Your PI says "publish." What do you say?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>"We tested 20 genes. Under the global null, the probability that at least one p-value is below 0.05 by chance is $1 - (1 - 0.05)^{20} \approx 0.64$." One hit at $p = 0.03$ is entirely consistent with chance. Options: apply Bonferroni (need $p &lt; 0.0025$ — this hit fails), apply BH (probably also fails with only one small p-value), pre-register and replicate the finding in an independent sample, or treat this as hypothesis-generating rather than hypothesis-confirming. Publishing it as a finding without any of the above is the exact failure mode behind the replication crisis.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>one small p-value in 20 tests ≈ expected by chance; correct, replicate, or label as exploratory.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">You run 10 A/B tests. Two come back significant at $p &lt; 0.05$. Your PM wants to ship both. What's your response?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Under the null of "nothing works," you'd expect $0.05 \cdot 10 = 0.5$ false positives on average, with occasional runs of 2. So two hits out of ten is suspicious-but-not-impossible. Concretely: (1) apply Bonferroni at $\alpha/10 = 0.005$ — any hit below that can ship with more confidence; (2) effect size and confidence intervals matter more than p-values for a ship decision — a tiny effect with a wide CI, even if "significant," is a poor business bet; (3) prefer sequential testing or pre-registered stopping rules over peeking; (4) the real question for your PM: what's the cost of shipping a noop vs missing a real improvement?</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>expected 0.5 FPs at 10 tests; correct and look at effect size + CI; costs asymmetry drives the decision.</p>
+      </div>
+    </div>
+  </div>
 
   <hr/>
   <div class="card big-idea">

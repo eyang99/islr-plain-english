@@ -180,10 +180,60 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You have 1000 genes and 80 patients. Your postdoc runs a plain linear regression and gets a model with huge R². Why are you worried?</div>
-  <div class="prompt">Ridge and lasso both shrink coefficients. Why does lasso give you sparse coefficients and ridge doesn't?</div>
-  <div class="prompt">You have 50 correlated predictors all plausibly relevant. Lasso picks one and zeros the rest. What's a better approach?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Shrinkage is a philosophy before it's an algorithm.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0" data-tolerance="0.001">
+      <span class="qz-num">Question 1 · compute (ridge extremes)</span>
+      <p class="qz-prompt">In ridge regression, the penalty is $\lambda \sum_j \beta_j^2$. As $\lambda \to \infty$, what do all the $\hat{\beta}_j$ (excluding the intercept) approach?</p>
+      <input class="qz-input" type="text" placeholder="value" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$\mathbf{0}$. An infinite penalty on any nonzero coefficient forces every coefficient to zero. The prediction becomes a constant (the intercept). At $\lambda = 0$ you're back to ordinary least squares — so $\lambda$ is a continuous dial between "full OLS" and "null model."</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">You have 1000 genes and 80 patients. Your postdoc runs a plain linear regression and gets a model with huge $R^2$. Why are you worried?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>$p \gg n$. With 1000 predictors and only 80 observations, OLS is not identified in the usual sense — once you have 80 columns linearly independent of the rest you can perfectly fit the 80 $y$-values. $R^2$ near 1 is a mathematical artifact, not a sign that the model learned anything. Out-of-sample error will be terrible. The entire chapter is about how to proceed: subset selection is too combinatorial at $p = 1000$, so you reach for ridge or lasso (or PCR/PLS) to get stable estimates. Cross-validate $\lambda$ on patient-level splits (not gene-level).</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>p &gt; n makes OLS meaningless; $R^2$ is an artifact; regularize + CV.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Ridge and lasso both shrink coefficients. Why does lasso give you sparse coefficients (many exactly zero) and ridge doesn't?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Geometry of the penalty. Ridge's constraint region is a hypersphere (smooth, no corners); the elliptical RSS contours of the loss typically hit it on a face, so no coefficient is forced to exactly zero — each just gets small. Lasso's constraint region is a hypercube rotated 45° — a diamond with sharp corners <em>on the axes</em>. The RSS contours usually first touch the diamond at a corner, where one or more coordinates are zero. That's why lasso produces sparse solutions: the corners live on the axes.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>L1 = diamond with corners on axes; L2 = sphere, no corners; sparsity is a geometric consequence.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">You have 50 correlated predictors all plausibly relevant. Lasso picks one and zeros the rest. What's a better approach?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p><strong>Elastic net.</strong> It's an L1 + L2 penalty: the L1 part encourages sparsity, the L2 part has a "grouping effect" that keeps correlated predictors in together rather than arbitrarily killing all but one. Tune the mixing parameter $\alpha$ (1 = lasso, 0 = ridge) by CV. Alternatively, for pure "group" structure (e.g., dummies for one factor), use group lasso to select or zero out whole groups together.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>elastic net: L1 + L2; grouping effect; group lasso when groups are known a priori.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch05.html">← Ch 5</a>

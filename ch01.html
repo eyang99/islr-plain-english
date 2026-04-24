@@ -140,9 +140,47 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You're given a spreadsheet with customer data and a column "did they buy." Is this supervised or unsupervised? Regression or classification? What's n and p?</div>
-  <div class="prompt">A drug company wants to know which of 20 biomarkers predicts response to a new treatment. Is this a prediction or inference problem? Why does the distinction change which model you'd pick?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Warm-up. The real work starts in Ch 2.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="19" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute</span>
+      <p class="qz-prompt">Your spreadsheet has 500 rows and 20 columns. One column is the outcome "did they buy." What is $p$, the number of predictors?</p>
+      <input class="qz-input" type="text" placeholder="p" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>20 columns − 1 target = <strong>19 predictors</strong>. $n = 500$, $p = 19$. The target is never a feature — it's what you're trying to predict from the others.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">Using the same spreadsheet above: supervised or unsupervised? Regression or classification? Justify each choice in one line.</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p><strong>Supervised</strong> — you have labeled outcomes ("did they buy"). <strong>Classification</strong> — the outcome is categorical (yes/no), not a continuous number. If the column were "dollars spent" instead, it'd be regression.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">A drug company wants to know which of 20 biomarkers predicts response to a new treatment. Is this prediction or inference? Why does the distinction change which model you'd pick?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>This is <strong>inference</strong> — the goal is to understand which biomarkers matter and how, not just to predict outcomes for new patients. For inference you want interpretable coefficients with honest standard errors, pushing you toward linear/logistic regression (possibly regularized) where each variable's contribution is transparent. If the goal were pure prediction — "give me the probability of response for this patient" — you'd reach for gradient boosting or a neural net, losing interpretability but gaining accuracy. Same data, different tool because the <em>question</em> is different.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>inference vs prediction; interpretability vs accuracy; goal drives model choice, not the data alone.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="primer.html">← Primer</a>

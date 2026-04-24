@@ -216,10 +216,74 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">Your regression output says ad spend has β̂ = 2.3, SE = 0.1, p &lt; 0.001, and R² = 0.02. Is ad spend "important"?</div>
-  <div class="prompt">You add "is_weekend" to a model and the coefficient on "day_of_month" reverses. What's going on?</div>
-  <div class="prompt">Your residuals vs fitted plot shows a smile (curve upward on both ends). Which assumption is broken and what do you try?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Regression looks simple. The traps are everywhere.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="4" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute (β̂₁)</span>
+      <p class="qz-prompt">Given $\sum (x_i - \bar{x})(y_i - \bar{y}) = 48$ and $\sum (x_i - \bar{x})^2 = 12$, find the least-squares slope $\hat{\beta}_1$.</p>
+      <input class="qz-input" type="text" placeholder="β̂₁" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$\hat{\beta}_1 = \dfrac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2} = \dfrac{48}{12} = \mathbf{4}$.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="compute" data-answer="-10" data-tolerance="0.01">
+      <span class="qz-num">Question 2 · compute (β̂₀)</span>
+      <p class="qz-prompt">Using $\hat{\beta}_1 = 4$ from above, and $\bar{x} = 5$, $\bar{y} = 10$: find the intercept $\hat{\beta}_0$.</p>
+      <input class="qz-input" type="text" placeholder="β̂₀" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x} = 10 - 4 \cdot 5 = \mathbf{-10}$. The line is $\hat{y} = -10 + 4x$. It passes through $(\bar{x}, \bar{y}) = (5, 10)$, as the closed-form always does.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Your regression output says ad spend has $\hat{\beta} = 2.3$, $SE = 0.1$, $p &lt; 0.001$, and $R^2 = 0.02$. Is ad spend "important"?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Two different questions. <strong>Statistically:</strong> yes — the t-statistic is 23 and p &lt; 0.001, so the coefficient is very precisely estimated and clearly nonzero. <strong>Practically:</strong> no — R² = 0.02 means ad spend explains 2% of the variation in the outcome. The effect is real but tiny. Large-sample datasets routinely produce microscopic p-values on economically meaningless effects. Always quote the effect size alongside significance, and use $R^2$ or an equivalent measure of practical magnitude.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>significance ≠ importance; huge $n$ makes tiny effects look significant; always report effect size.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">You add "is_weekend" to a model and the coefficient on "day_of_month" reverses. What's going on?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Confounding / omitted variable bias. The original "day_of_month" coefficient was picking up part of the weekend effect (since weekends cluster on certain days of the month). Once is_weekend is in the model, "day_of_month" now means "effect of day-of-month <em>holding weekend status constant</em>" — a different estimand from before, and apparently one with the opposite sign. This is a clean demonstration that coefficients aren't stable properties of the predictor; they're properties of the model specification.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>omitted variable bias; coefficients depend on what else is in the model; "holding other things constant" is literal.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 5 · explain</span>
+      <p class="qz-prompt">Your residuals vs fitted plot shows a smile (residuals curve upward at both ends). Which assumption is broken and what do you try?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p><strong>Linearity is broken.</strong> A smile in the residuals means the true relationship bends upward at the extremes; your straight line systematically under-predicts there and over-predicts in the middle. Fixes, in order: add a quadratic term ($X^2$) or a more flexible transform ($\log$, $\sqrt{\cdot}$), fit a spline (Ch 7), or step up to a non-linear method. A single-slope coefficient cannot summarize a bending relationship — see the "mandatory warning label" above.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>non-linear residual pattern = non-linearity; quadratic/spline fixes; hair-dryer-in-bathtub rule.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch02.html">← Ch 2</a>

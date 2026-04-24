@@ -140,9 +140,48 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">Why use a natural cubic spline with 5 knots instead of a 10th-degree polynomial, if both have roughly the same effective flexibility?</div>
-  <div class="prompt">A coworker fits a GAM and concludes "age has no effect" because its p-value is 0.3. But the partial plot of f(age) shows a clear U-shape. What's happening?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Smooth flexibility without betraying interpretability.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="6" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute</span>
+      <p class="qz-prompt">A cubic spline has one knot for every cubic piece boundary. For a cubic regression spline with $K$ knots, the number of parameters (including intercept) is $K + 4$. How many parameters for $K = 2$ knots?</p>
+      <input class="qz-input" type="text" placeholder="parameters" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$K + 4 = 2 + 4 = \mathbf{6}$. A natural cubic spline adds boundary constraints (linearity outside the data range) and gets down to $K + 2 = 4$ parameters for the same $K = 2$ — fewer effective degrees of freedom, more stable tails.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">Why use a natural cubic spline with 5 knots instead of a 10th-degree polynomial, if both have roughly the same effective flexibility?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>A 10th-degree polynomial is wildly unstable at the boundaries — its tails swing violently because a global polynomial has to bend far to accommodate faraway structure. A spline is piecewise cubic, so flexibility is <em>local</em>: a bump in one region doesn't warp the tails. A <em>natural</em> cubic spline further constrains the fit to be linear outside the boundary knots, which kills the tail instability entirely. Equal nominal flexibility, dramatically better extrapolation and stability.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>polynomial tails blow up; splines keep flexibility local; natural splines are linear outside boundary knots.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">A coworker fits a GAM and concludes "age has no effect" because its p-value is 0.3. But the partial plot of $f(\text{age})$ shows a clear U-shape. What's happening?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>The reported p-value is typically testing the null "<em>the smooth function of age is identically zero</em>" — or in some packages it's averaging over the whole smooth, which can average a positive half against a negative half toward zero. A U-shape has real effects at both ends but near-zero average. Trust the partial plot. If you want a formal test, test specific contrasts (e.g., $f(\text{age}=20)$ vs $f(\text{age}=50)$) or use a test for non-zero second derivative. A coefficient-style p-value can't summarize a non-monotonic smooth.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>single p-value can't summarize a curve; U-shapes average to zero; trust the partial plot.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch06.html">← Ch 6</a>

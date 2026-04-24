@@ -147,9 +147,48 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">A churn model predicts "months until churn" using linear regression. What goes wrong if you have a lot of customers who haven't churned yet?</div>
-  <div class="prompt">A Cox model gives hazard ratio 0.7 (p=0.001) for a new drug. Does that mean patients on the drug live 30% longer? What does it actually mean?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Time-to-event when you can't wait for every event.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.75" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute (conditional survival)</span>
+      <p class="qz-prompt">The survival function is $S(1) = 0.8$ and $S(2) = 0.6$. What is the probability of surviving past year 2 <em>given</em> you survived year 1?</p>
+      <input class="qz-input" type="text" placeholder="conditional probability" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$P(T &gt; 2 \mid T &gt; 1) = \dfrac{P(T &gt; 2)}{P(T &gt; 1)} = \dfrac{S(2)}{S(1)} = \dfrac{0.6}{0.8} = \mathbf{0.75}$. Conditioning on "still alive at year 1" rescales the denominator. This is why the Kaplan-Meier estimator multiplies conditional survival probabilities across event times.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">A churn model predicts "months until churn" using linear regression. What goes wrong if you have a lot of customers who haven't churned yet?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Those customers are <strong>censored</strong> — you know they haven't churned yet, but you don't know their actual "months to churn." You can't drop them (systematic bias toward customers who churned fast, because the loyal ones all disappear). You can't set their time to "never" (you don't know that either). You can't fill with a last-observed value (also biased). The fix is a survival model: Kaplan-Meier for marginal survival estimation, or a Cox proportional hazards model for regression. Both treat censored observations correctly — they contribute information up to their last observation and then "drop out" of the risk set.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>censoring is information, not missingness; dropping censored rows is biased; KM and Cox handle it.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">A Cox model gives hazard ratio 0.7 ($p = 0.001$) for a new drug. Does that mean patients on the drug live 30% longer? What does it actually mean?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>No — HR is not a ratio of life expectancies. It says: at any moment a patient is still at risk, the <em>instantaneous rate of death</em> for the drug group is 70% of the control group's. Whether that translates to 30% longer life depends on the baseline hazard shape, the follow-up duration, and censoring patterns; median survival can change by more or less than 30%, sometimes dramatically. Always report median (or restricted mean) survival alongside the HR. And remember: HR assumes the proportional-hazards assumption holds across the whole follow-up window. If it doesn't (say, the drug helps early but not late), a single HR is a misleading summary.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>HR is a rate ratio, not a lifespan ratio; report median survival; check PH assumption.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch10.html">← Ch 10</a>

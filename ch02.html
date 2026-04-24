@@ -195,10 +195,60 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You train a model. Training error = 0.01. Test error = 0.42. In one sentence, what happened and what do you do next?</div>
-  <div class="prompt">You're tuning K in KNN. Training error keeps falling as K decreases. Why shouldn't you just pick K=1?</div>
-  <div class="prompt">Your boss says "our new deep learning model got zero error on the test set!" What do you ask?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">This is the chapter; these questions are the chapter's whole point.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="6" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute</span>
+      <p class="qz-prompt">A model at a particular point $x_0$ has $\text{Bias}^2 = 2$, $\text{Var}(\hat{f}(x_0)) = 3$, and irreducible noise $\text{Var}(\epsilon) = 1$. What is the expected test MSE at $x_0$?</p>
+      <input class="qz-input" type="text" placeholder="MSE" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$E[(y_0 - \hat{f}(x_0))^2] = \text{Bias}^2 + \text{Var} + \text{Var}(\epsilon) = 2 + 3 + 1 = \mathbf{6}$. The first two pieces are reducible (fight them with model choice). The third is the floor.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">You train a model. Training MSE = 0.01, test MSE = 0.42. In one sentence, what happened — and what do you do next?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Classic overfitting: the model has high variance — it memorized training idiosyncrasies rather than the underlying pattern. Next moves: reduce flexibility (more regularization, fewer features, larger $K$ in KNN, simpler model class), gather more data if feasible, and always validate with cross-validation rather than a single train/test split.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>overfitting = high variance; reduce flexibility; use CV.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">You're tuning $K$ in KNN. Training error keeps falling as $K$ decreases. Why shouldn't you just pick $K = 1$?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>At $K = 1$ each training point is its own nearest neighbor, so training error goes to zero. But that model has maximum variance: flipping or removing a single training point changes its predictions dramatically. Test error (what you actually care about) is the sum of bias, variance, and irreducible noise — lowering bias to zero by going to $K = 1$ blows up variance and raises test error. You pick $K$ by cross-validation to minimize <em>test</em> error, not training error.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>training error ≠ test error; K=1 is max variance; CV is the arbiter.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">Your boss says "our new deep learning model got zero error on the test set!" What do you ask?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>"Where did the test set come from?" Zero test error almost always means one of three things: (1) the test set leaked into training (same rows, or features that are post-hoc consequences of the label); (2) the "test set" isn't actually held out — someone tuned against it many times, turning it into a second training set; or (3) irreducible noise in this problem is genuinely near zero (rare). Ask for the data pipeline, the split protocol, and a fresh held-out sample you can evaluate on.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>leakage; tuning against test set; irreducible noise floor; demand a fresh holdout.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch01.html">← Ch 1</a>

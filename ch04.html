@@ -210,10 +210,76 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You have a logistic regression predicting fraud with 1% base rate. Your model has 99% accuracy. Your boss is thrilled. Why should you be skeptical?</div>
-  <div class="prompt">Under what data conditions would you pick LDA over logistic regression?</div>
-  <div class="prompt">Naive Bayes assumes feature independence. When does that falsely optimistic assumption still produce a good classifier?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Classification is where calibration, class imbalance, and decision thresholds sneak in.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.963" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute (Bayes)</span>
+      <p class="qz-prompt">A naive Bayes spam filter uses one feature: the word "viagra." Given $P(\text{spam}) = 0.3$, $P(\text{"viagra"} \mid \text{spam}) = 0.6$, and $P(\text{"viagra"} \mid \text{not spam}) = 0.01$, what is $P(\text{spam} \mid \text{"viagra"})$?</p>
+      <input class="qz-input" type="text" placeholder="probability" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$P(\text{spam} \mid v) = \dfrac{P(v \mid \text{spam})\,P(\text{spam})}{P(v)}$, where $P(v) = 0.6 \cdot 0.3 + 0.01 \cdot 0.7 = 0.18 + 0.007 = 0.187$.</p>
+        <p>$P(\text{spam} \mid v) = 0.18 / 0.187 \approx \mathbf{0.963}$. The word "viagra" swings the posterior from 30% (prior) to ~96% — because it's much more common in spam.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="compute" data-answer="0.714" data-tolerance="0.005">
+      <span class="qz-num">Question 2 · compute (recall)</span>
+      <p class="qz-prompt">Confusion matrix for your classifier: TP = 50, FP = 10, FN = 20, TN = 420. What is the <strong>recall</strong> (sensitivity) for the positive class?</p>
+      <input class="qz-input" type="text" placeholder="recall" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>Recall = $\dfrac{TP}{TP + FN} = \dfrac{50}{50 + 20} = \dfrac{50}{70} \approx \mathbf{0.714}$. Of all the true positives that exist in the data, you caught about 71%.</p>
+        <p>For reference: precision = 50 / 60 = 0.833, accuracy = 470 / 500 = 0.94, specificity = 420 / 430 = 0.977.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Your logistic regression predicts fraud with 1% base rate. Your model reports 99% accuracy. Your boss is thrilled. Why should you be skeptical?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Accuracy is the wrong metric under class imbalance. A model that predicts "not fraud" for every single transaction achieves 99% accuracy — while catching zero fraud, which is the only thing anyone cares about. Demand recall and precision on the fraud class, or equivalently a confusion matrix and a precision-recall curve. Also ask about the threshold: at what probability does the model flag a transaction? Moving the threshold trades precision for recall and is itself a product decision, not a statistical one.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>accuracy fails under imbalance; use recall / precision / PR curve; threshold is a policy choice.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">Under what data conditions would you pick LDA over logistic regression?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Three conditions favor LDA: (1) the classes are approximately Gaussian with a shared covariance matrix, in which case LDA is closer to the Bayes-optimal classifier than logistic regression; (2) the classes are well-separated, where logistic regression's MLE becomes unstable (the coefficients blow up); (3) you have more than two classes — multinomial LDA is more natural and more stable than multinomial logistic regression. Logistic regression is more robust when the Gaussian assumption fails and is generally the default for two-class problems with messy data.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>Gaussianity assumption; separation breaks logistic MLE; multi-class naturalness of LDA.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 5 · explain</span>
+      <p class="qz-prompt">Naive Bayes assumes feature independence. When does that flagrantly false assumption still produce a good classifier?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Because classification only needs you to rank $P(y=k \mid x)$ across classes correctly — not to estimate it accurately. Even if NB's assumed densities are biased (because features are actually correlated), the <em>ordering</em> of the posteriors can remain correct, so the argmax is right. NB's poorly calibrated probabilities become a problem when you need to compare them to a decision threshold or combine them with costs, but as a label-producer it's often surprisingly competitive, especially with short or sparse feature vectors (text classification).</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>argmax only needs the ordering; probabilities are uncalibrated; text classification is the canonical "bad-assumption-still-works" case.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch03.html">← Ch 3</a>

@@ -155,9 +155,62 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">You do feature selection (pick top 20 of 1000 features by correlation with Y), then run 10-fold CV on those 20 features. Your error looks great. Why is the number wrong?</div>
-  <div class="prompt">Your coworker says "my bootstrap CI for the correlation is [0.1, 0.9], so there's a 95% probability the true correlation is in that range." What's off?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Resampling is how you buy honesty without a bigger dataset.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="100" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute</span>
+      <p class="qz-prompt">You do 10-fold cross-validation on 1000 observations. How many observations are in each validation fold?</p>
+      <input class="qz-input" type="text" placeholder="observations per fold" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$1000 / 10 = \mathbf{100}$ per fold. In each of 10 rounds, one fold (100 obs) is the validation set and the other 900 train the model. The CV error is the average across rounds.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="compute" data-answer="0.368" data-tolerance="0.01">
+      <span class="qz-num">Question 2 · compute (bootstrap)</span>
+      <p class="qz-prompt">In a bootstrap sample of size $n$ drawn with replacement from $n$ original observations, what is the approximate probability that any given original observation is <strong>not</strong> in the bootstrap sample (for large $n$)?</p>
+      <input class="qz-input" type="text" placeholder="probability" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>Each of $n$ draws is independent and excludes a given observation with probability $(n-1)/n$. The probability of being excluded from all $n$ draws is $(1 - 1/n)^n \to 1/e \approx \mathbf{0.368}$ for large $n$. That's why the out-of-bag sample of a random forest contains roughly $\mathbf{1 - 1/e \approx 63.2\%}$ of the training data.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">You pick the top 20 of 1000 features by correlation with $Y$, then run 10-fold CV on those 20 features. Your CV error looks great. Why is the number wrong?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>You leaked the label. Feature selection by correlation with $Y$ used the <em>entire</em> dataset, including what would later become validation folds. Each CV fold's "held-out" data was already used to pick the features that benefit the model. The fix: put feature selection <em>inside</em> the CV loop — for each fold, redo selection on that fold's training portion only. The correct estimate is almost always meaningfully worse.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>pre-processing that uses $Y$ must live inside the CV loop; "CV on the pipeline, not the fitted features."</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 4 · explain</span>
+      <p class="qz-prompt">Your coworker says "my bootstrap 95% CI for the correlation is [0.1, 0.9], so there's a 95% probability the true correlation is in that range." What's off?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Same confusion as with any frequentist confidence interval. The bootstrap CI is a statement about the procedure: if you re-ran the whole study many times and constructed bootstrap CIs each time, 95% of them would cover the true correlation. This specific interval either contains the truth or it doesn't — the 95% is a property of the method, not a probability about this one number. Also, [0.1, 0.9] is so wide it carries almost no practical information — the honest message is "we can't pin this correlation down with this much data."</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>CI is a method property, not a posterior; wide CI = low information.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch04.html">← Ch 4</a>

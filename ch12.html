@@ -179,9 +179,48 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">A marketing team runs K-means with K=5 and proudly labels the clusters "high-value champions," "at-risk," etc. What should you ask before trusting the labels?</div>
-  <div class="prompt">Your PCA scree plot shows a smooth curve with no clear elbow. What does that tell you about the structure of your data?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">Finding structure without labels is where wishful thinking is easiest.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="0.45" data-tolerance="0.005">
+      <span class="qz-num">Question 1 · compute (PCA cumulative)</span>
+      <p class="qz-prompt">The first three principal components explain 20%, 15%, and 10% of the total variance. What fraction is cumulatively explained by PC1–PC3?</p>
+      <input class="qz-input" type="text" placeholder="fraction (0–1 or %)" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$0.20 + 0.15 + 0.10 = \mathbf{0.45}$, or 45%. The other 55% lives in the remaining components. Whether that's enough depends on your purpose: visualization (usually fine), a dense feature representation for a downstream model (often not — PCR keeps more components), or denoising (depends on the signal/noise shape).</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">A marketing team runs K-means with K = 5 and proudly labels the clusters "high-value champions," "at-risk," etc. What should you ask before trusting the labels?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Four quick questions: <strong>(1) Why K = 5?</strong> K-means always returns K clusters — the algorithm doesn't validate that structure exists. Try different K and look at a silhouette score or elbow plot. <strong>(2) Were features standardized?</strong> K-means uses Euclidean distance, so an un-scaled "annual spend" will dominate "visits per month." <strong>(3) Are the clusters reproducible?</strong> K-means depends on random initialization; run it many times and see if the labeling is stable. <strong>(4) Are the clusters interpretable in ways you didn't pre-decide?</strong> The pattern of naming clusters with business labels often smuggles in a narrative the data doesn't support.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>K is a choice not a discovery; standardization matters; stability test; don't confabulate labels.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">Your PCA scree plot shows a smooth curve with no clear elbow. What does that tell you about the structure of your data?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>There's no small number of dominant directions. Variance is spread fairly evenly across components, meaning PCA won't give you a clean low-rank representation. Possibilities: (1) your features are already roughly uncorrelated — there's no compression to be had; (2) the "structure" is non-linear and PCA (a linear method) can't find it — consider kernel PCA, UMAP, or t-SNE; (3) the true dimensionality really is high for this data, and any reduction will throw away real signal. The scree curve is telling you to either keep many components, use a different tool, or give up on dimension reduction for this problem.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>no elbow = no low-rank structure; maybe non-linear; or genuinely high-dimensional.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch11.html">← Ch 11</a>

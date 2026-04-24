@@ -148,9 +148,48 @@
     </div>
   </div>
 
-  <h3>Explain it back</h3>
-  <div class="prompt">Two training points sit in the middle of your class blob, well inside the margin. You delete them. Does your SVM change? Now delete one of the support vectors. What happens?</div>
-  <div class="prompt">You grid-search C and γ. C=100, γ=10 gives zero training error but terrible CV error. What's going on, and which knob do you adjust first?</div>
+  <div class="quiz">
+    <h2>Quiz</h2>
+    <p class="quiz-intro">The widest street between two classes, and the trick for curving it.</p>
+
+    <div class="qz-item" data-type="compute" data-answer="144" data-tolerance="0.01">
+      <span class="qz-num">Question 1 · compute (kernel)</span>
+      <p class="qz-prompt">For the polynomial kernel $K(x, y) = (x \cdot y + 1)^2$ with $x = (1, 2)$ and $y = (3, 4)$, compute $K(x, y)$.</p>
+      <input class="qz-input" type="text" placeholder="K(x,y)" />
+      <div class="qz-controls">
+        <button class="qz-check">Check</button>
+        <span class="qz-feedback"></span>
+      </div>
+      <div class="qz-solution">
+        <span class="qz-sol-label">Solution</span>
+        <p>$x \cdot y = 1 \cdot 3 + 2 \cdot 4 = 11$. Then $K = (11 + 1)^2 = 12^2 = \mathbf{144}$. The kernel trick's power is that you never form the 5-dimensional feature map (all degree-≤2 monomials); you only need this inner product.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 2 · explain</span>
+      <p class="qz-prompt">Two training points sit in the middle of your class blob, well inside the margin. You delete them. Does your SVM change? Now delete one of the support vectors. What happens?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Deleting points well inside the margin changes nothing — they don't enter the dual solution and have zero Lagrange multipliers. The decision boundary depends only on support vectors (points on the margin or misclassified). Delete a support vector, and the boundary typically shifts, sometimes meaningfully, because you've removed a constraint that was actively shaping the hyperplane. This is the SVM's signature property: the model is fully determined by a sparse set of "boundary cases," not by the bulk of the training data — which is both a strength (elegant sparsity) and a weakness (sensitive to the few points that happen to sit on the boundary).</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>interior points don't matter; support vectors are the whole model; that sparsity is both feature and liability.</p>
+      </div>
+    </div>
+
+    <div class="qz-item" data-type="explain">
+      <span class="qz-num">Question 3 · explain</span>
+      <p class="qz-prompt">You grid-search $C$ and $\gamma$ on an RBF SVM. $C = 100$, $\gamma = 10$ gives zero training error but terrible CV error. What's going on, and which knob do you adjust first?</p>
+      <textarea class="qz-textarea" placeholder="your answer..."></textarea>
+      <div class="qz-controls"><button class="qz-reveal">Reveal model answer</button></div>
+      <div class="qz-model">
+        <span class="qz-model-label">Model answer</span>
+        <p>Classic overfitting from a too-flexible kernel. Large $\gamma$ makes each RBF bump narrow, so the model can carve a tiny Gaussian around every training point. Large $C$ reinforces this by penalizing any margin violation heavily. Together: zero training error, no generalization. The first knob to turn down is $\gamma$ — shrinking it widens the bumps and smooths the boundary. Then reconsider $C$. Rule of thumb: a sensible $\gamma$ is near $1 / (p \cdot \text{Var}(X))$ (scikit-learn's default scale). Grid-search on a log scale.</p>
+        <p class="qz-keypoints"><span class="qz-keypoints-label">Key points</span>large $\gamma$ = narrow bumps = overfit; drop $\gamma$ first; grid on log scale.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="chapter-nav">
     <a href="ch08.html">← Ch 8</a>
