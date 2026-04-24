@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 8 · Trees, Forests, Boosting · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch07.html">← Ch 7</a>
+  <a href="ch09.html">Ch 9 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 8</span>
+  <h1 class="serif">Trees, Forests, Boosting</h1>
+  <p class="subtitle">A decision tree is a flowchart the model learns by itself. Alone it's weak. Add some clever ensembling and it becomes the most practically useful non-deep-learning tool in ML.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">One tree = a flowchart. Many trees averaged or boosted together = one of the best predictors you can buy.</h3>
+    <p>A single tree is intuitive and interpretable but high variance. Bagging, random forests, and boosting are three different recipes for combining many trees into a single, lower-variance prediction machine.</p>
+  </div>
+
+  <h2>1. The humble decision tree</h2>
+  <div class="concept">
+    <p>A tree recursively splits the predictor space into rectangles. At each split, pick the predictor and threshold that best separates the data. In each leaf (terminal region), predict the mean of Y (regression) or the majority class (classification).</p>
+
+    <h3>How a split is chosen</h3>
+    <ul>
+      <li><strong>Regression</strong>: pick the split that minimizes RSS within the resulting two regions.</li>
+      <li><strong>Classification</strong>: pick the split that minimizes a purity measure — usually the Gini index or entropy (cross-entropy). Both measure "how mixed is this node?"</li>
+    </ul>
+
+    <h3>Pros and cons of a single tree</h3>
+    <ul>
+      <li>Easy to explain ("if age &gt; 40 and income &gt; 50k, then …"). A boss can follow it.</li>
+      <li>Handles categorical variables and missing data naturally.</li>
+      <li>No need to scale features.</li>
+      <li><strong>But:</strong> high variance. A different training sample gives a very different tree.</li>
+      <li>Piecewise-constant predictions — can't smoothly extrapolate.</li>
+    </ul>
+  </div>
+
+  <h2>2. Pruning</h2>
+  <div class="concept">
+    <p>If you let a tree grow deep, it overfits (one leaf per observation, zero training error, terrible test error). The cure is <strong>cost-complexity pruning</strong>:</p>
+    <ol>
+      <li>Grow a large tree.</li>
+      <li>For a range of penalty values $\alpha$, find the subtree minimizing $RSS + \alpha |T|$, where $|T|$ is the number of leaves.</li>
+      <li>Pick $\alpha$ by cross-validation.</li>
+    </ol>
+    <p>Same logic as ridge/lasso: trade some fit for less complexity.</p>
+  </div>
+
+  <h2>3. Bagging — variance reduction by averaging</h2>
+  <div class="concept">
+    <p>A single tree has high variance. If you had many independent datasets, you'd fit many trees and average them. But you don't. So use the bootstrap:</p>
+    <ol>
+      <li>Draw B bootstrap samples (sample n points with replacement).</li>
+      <li>Fit a tree on each. Don't prune — let them overfit.</li>
+      <li>Average predictions across trees (or take majority vote for classification).</li>
+    </ol>
+    <p>Why it works: averaging reduces variance. If each tree is unbiased but high variance, the average is still unbiased but much lower variance.</p>
+    <div class="callout">Bagging loses the interpretability of a single tree. You can recover partial interpretability with <strong>variable importance</strong> — measure how much each variable reduces the splitting criterion across all trees.</div>
+  </div>
+
+  <h2>4. Random forests — bagging with a twist</h2>
+  <div class="concept">
+    <p>Problem with bagging: if one predictor is very strong, every tree's top split is on it, and the trees end up highly correlated. Averaging correlated things doesn't reduce variance much.</p>
+    <p><strong>Random forest fix:</strong> at each split, only consider a random subset of predictors (typically $m = \sqrt{p}$ for classification, $p/3$ for regression). Weak predictors get more chances to split, trees are more diverse, averaging helps more.</p>
+    <div class="analogy">Bagging makes B bootcamp instructors vote, but they all read the same playbook. Random forest blindfolds each instructor to different variables, forcing them to develop different approaches. The vote is more informative.</div>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Number of trees B: <input type="range" id="rfB" min="1" max="50" value="1"/></label>
+        <span class="readout" id="rfReadout">1 tree</span>
+      </div>
+      <svg id="rfSvg" viewBox="0 0 600 240" aria-label="Random forest averaging"></svg>
+      <p class="tagline">Each thin line is one tree's prediction. The thick line is the average. As B grows, the ensemble converges to a stable, smooth function.</p>
+    </div>
+  </div>
+
+  <h2>5. Boosting — learning slowly from mistakes</h2>
+  <div class="concept">
+    <p>Different philosophy. Instead of training trees independently and averaging, train them sequentially, each one trying to fix what the previous ones got wrong.</p>
+
+    <h3>Gradient boosting, in four lines</h3>
+    <ol>
+      <li>Start with a constant prediction (the mean of Y).</li>
+      <li>Compute the residuals (errors from the current prediction).</li>
+      <li>Fit a small tree to predict those residuals.</li>
+      <li>Add that tree's predictions (scaled by a small learning rate) to the current model. Repeat.</li>
+    </ol>
+    <p>Three knobs:</p>
+    <ul>
+      <li><strong>B</strong>: number of trees. More = slower, more likely to overfit. Tune with CV.</li>
+      <li><strong>λ (learning rate / shrinkage)</strong>: how much each tree contributes. Small λ + large B generally wins.</li>
+      <li><strong>d (interaction depth)</strong>: tree depth. Usually small (1-8). d=1 is a "stump" and additive. Higher d allows interactions.</li>
+    </ul>
+
+    <div class="analogy">If bagging is <strong>a jury</strong> voting independently, boosting is <strong>a student</strong> taking the same test over and over, each time focusing harder on the questions they got wrong.</div>
+
+    <h3>Why boosting often wins</h3>
+    <p>By construction, each new tree targets the current weakness of the ensemble. Given enough time and right hyperparameters, it's hard to beat. XGBoost, LightGBM, CatBoost are all gradient boosting implementations optimized for speed and accuracy, and they dominate tabular-data leaderboards.</p>
+
+    <div class="callout warn"><strong>Boosting CAN overfit</strong> if B is too large. Unlike bagging, which just stops helping past a point, boosting keeps "learning" and can memorize noise. Always cross-validate B.</div>
+  </div>
+
+  <h2>6. BART (Bayesian Additive Regression Trees)</h2>
+  <div class="concept">
+    <p>Think of BART as boosting's Bayesian cousin. Each tree is tiny (forced to be weak by a prior), the ensemble is fit by a sampler, and you get uncertainty estimates for free. In practice it performs comparably to gradient boosting on many problems, and shines when you need predictive intervals.</p>
+  </div>
+
+  <h2>7. Trees vs linear models</h2>
+  <div class="concept">
+    <table>
+      <thead><tr><th></th><th>Linear model</th><th>Tree-based</th></tr></thead>
+      <tbody>
+        <tr><td>True relationship linear</td><td>✓ Better</td><td>Forced to approximate with steps</td></tr>
+        <tr><td>Highly nonlinear, interactions</td><td>Needs manual feature engineering</td><td>✓ Captures automatically</td></tr>
+        <tr><td>Extrapolation beyond training range</td><td>Works (linear)</td><td>Flat (predicts leaf average)</td></tr>
+        <tr><td>Interpretability</td><td>Coefficients</td><td>Variable importance, partial plots</td></tr>
+        <tr><td>Mixed data types / missing values</td><td>Needs cleanup</td><td>✓ Handles natively</td></tr>
+      </tbody>
+    </table>
+    <p>Rule of thumb for tabular data: start with a linear model for inference, start with gradient boosting for prediction.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>How does a decision tree pick its splits?</strong></div>
+      <div class="fc-back">Greedy: at each node, try every predictor and every threshold; pick the one that most reduces RSS (regression) or Gini/entropy (classification).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What does cost-complexity pruning do?</strong></div>
+      <div class="fc-back">Grows a large tree then trims it, penalizing number of leaves: minimize RSS + α·|T|. Cross-validate α.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Why does a single tree have high variance?</strong></div>
+      <div class="fc-back">Greedy splits are sensitive to small changes in the training data. A different sample of the same size often gives a very different tree.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What is bagging?</strong></div>
+      <div class="fc-back">Bootstrap aggregating: fit B trees on B bootstrap samples, average (regression) or vote (classification). Reduces variance.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What's the twist that makes random forests better than plain bagging?</strong></div>
+      <div class="fc-back">At each split, consider only a random subset of m predictors (typically √p). Decorrelates the trees so averaging reduces variance more.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Bagging vs boosting — core difference?</strong></div>
+      <div class="fc-back">Bagging fits trees independently in parallel on bootstrap samples and averages. Boosting fits trees sequentially, each one correcting the previous ensemble's mistakes.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Three hyperparameters of gradient boosting?</strong></div>
+      <div class="fc-back">Number of trees B, learning rate λ (shrinkage), tree depth d. Small λ + large B usually best; tune B via CV.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>Can boosting overfit? Can bagging?</strong></div>
+      <div class="fc-back">Boosting: yes, if B too large. Bagging: basically no — beyond a point, adding more trees just stops helping but doesn't hurt.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>What's the main limitation of trees for extrapolation?</strong></div>
+      <div class="fc-back">Predictions are constant within each leaf. Outside the training data range, you just get the nearest leaf average — no trend continuation.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>Why use variable importance in a random forest?</strong></div>
+      <div class="fc-back">You lose the single-tree story when you ensemble, but you can measure how much each variable contributes to splits across all trees — a proxy for "which features matter?"</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">Why does random forest typically outperform plain bagging on the same data?</div>
+  <div class="prompt">Your boosting model's training error keeps dropping and test error is also dropping. Can you just keep adding trees until you're satisfied? What stops you?</div>
+  <div class="prompt">You have a tabular dataset with 20 features and need to deploy a predictor. Would you rather ship a random forest or a gradient boosted model? What do you weigh?</div>
+
+  <div class="chapter-nav">
+    <a href="ch07.html">← Ch 7</a>
+    <a href="ch09.html">Ch 9 · SVM →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('rfSvg');
+  const slider = document.getElementById('rfB');
+  const out = document.getElementById('rfReadout');
+  if (!svg) return;
+  const W = 600, H = 240, pad = 30;
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(31);
+  // Data from a sinusoid
+  const pts = [];
+  for (let i = 0; i < 80; i++) {
+    const x = rng();
+    const y = Math.sin(2 * Math.PI * x) + (rng() - 0.5) * 0.4;
+    pts.push([x, y]);
+  }
+  // Fit a "tree" = piecewise constant with random splits
+  function fitTree(data, splits=5) {
+    // Bootstrap sample
+    const bs = [];
+    for (let i = 0; i < data.length; i++) bs.push(data[Math.floor(rng() * data.length)]);
+    bs.sort((a, b) => a[0] - b[0]);
+    // Greedy splits (regression tree, very simple)
+    function split(d, depth) {
+      if (depth >= splits || d.length < 4) {
+        const mean = d.reduce((s, p) => s + p[1], 0) / d.length;
+        return [{ xmin: d[0][0], xmax: d[d.length-1][0], y: mean }];
+      }
+      let bestRSS = Infinity, bestIdx = -1;
+      for (let i = 1; i < d.length; i++) {
+        const left = d.slice(0, i), right = d.slice(i);
+        const lm = left.reduce((s, p) => s + p[1], 0) / left.length;
+        const rm = right.reduce((s, p) => s + p[1], 0) / right.length;
+        let rss = 0;
+        for (const p of left) rss += (p[1] - lm) ** 2;
+        for (const p of right) rss += (p[1] - rm) ** 2;
+        if (rss < bestRSS) { bestRSS = rss; bestIdx = i; }
+      }
+      if (bestIdx === -1) return [{ xmin: d[0][0], xmax: d[d.length-1][0], y: d.reduce((s,p)=>s+p[1],0)/d.length }];
+      return split(d.slice(0, bestIdx), depth+1).concat(split(d.slice(bestIdx), depth+1));
+    }
+    return split(bs, 0);
+  }
+  function predict(tree, x) {
+    for (const leaf of tree) if (x >= leaf.xmin && x <= leaf.xmax) return leaf.y;
+    // fallback to nearest
+    let best = tree[0], bd = Infinity;
+    for (const leaf of tree) {
+      const d = Math.min(Math.abs(x - leaf.xmin), Math.abs(x - leaf.xmax));
+      if (d < bd) { bd = d; best = leaf; }
+    }
+    return best.y;
+  }
+  const trees = [];
+  for (let i = 0; i < 50; i++) trees.push(fitTree(pts));
+  const X = x => pad + x * (W - 2 * pad);
+  const Y = y => H - pad - ((y + 2) / 4) * (H - 2 * pad);
+
+  function render() {
+    const B = parseInt(slider.value, 10);
+    let thin = '';
+    const grid = 200;
+    const avgs = new Array(grid).fill(0);
+    for (let b = 0; b < B; b++) {
+      let path = '';
+      for (let i = 0; i <= grid; i++) {
+        const x = i / grid;
+        const y = predict(trees[b], x);
+        path += (i === 0 ? 'M' : 'L') + X(x) + ',' + Y(y) + ' ';
+        if (i < grid) avgs[i] += y;
+      }
+      thin += `<path d="${path}" stroke="var(--ink-3)" stroke-width="0.6" fill="none" opacity="0.35"/>`;
+    }
+    let avgPath = '';
+    for (let i = 0; i < grid; i++) {
+      const x = i / grid;
+      const y = avgs[i] / B;
+      avgPath += (i === 0 ? 'M' : 'L') + X(x) + ',' + Y(y) + ' ';
+    }
+    let dots = '';
+    for (const [x, y] of pts) dots += `<circle cx="${X(x)}" cy="${Y(y)}" r="2" fill="var(--accent)" opacity="0.5"/>`;
+    svg.innerHTML = `
+      ${dots}
+      ${thin}
+      <path d="${avgPath}" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+      <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="var(--ink-3)"/>
+    `;
+    out.textContent = `B = ${B}  ·  ${B === 1 ? 'jagged single tree' : 'average smooths out'}`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

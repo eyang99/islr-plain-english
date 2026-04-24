@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 10 · Deep Learning · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch09.html">← Ch 9</a>
+  <a href="ch11.html">Ch 11 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 10</span>
+  <h1 class="serif">Deep Learning</h1>
+  <p class="subtitle">Neural networks, demystified. They're stacked logistic regressions. They learn features automatically. They dominate where no hand-crafted features exist (images, text, audio). They don't always win tabular data.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">A neural network is a chain of simple transformations that together can approximate any function.</h3>
+    <p>Each layer takes a vector, multiplies by a matrix, adds a bias, passes it through a non-linear "activation." Stack enough of those and you have a universal function approximator. Train it by gradient descent on a loss. That's the whole game.</p>
+  </div>
+
+  <h2>1. The single-layer neural network</h2>
+  <div class="concept">
+    <p>Start with inputs $X_1, \ldots, X_p$. Build $K$ intermediate units ("hidden units"):</p>
+    <p>$$ A_k = g\!\left(\beta_{k0} + \sum_{j=1}^p \beta_{kj} X_j\right) \quad k = 1, \ldots, K $$</p>
+    <p>where $g$ is a non-linear activation function (ReLU, sigmoid, tanh). Then combine the hidden units into the final output:</p>
+    <p>$$ f(X) = \gamma_0 + \sum_{k=1}^K \gamma_k A_k $$</p>
+
+    <div class="analogy">Each hidden unit is a little committee member who listens to the inputs, forms a weighted opinion, and applies a non-linear squash. The final output is a weighted average of the committee's opinions. More hidden units = bigger committee = more expressive.</div>
+
+    <h3>Why the non-linearity is essential</h3>
+    <p>If $g(z) = z$ (linear activation), the whole network collapses to a single linear regression. The non-linearity is what gives the network its universal approximation power. Without it, you're just doing matrix algebra with extra steps.</p>
+  </div>
+
+  <h2>2. Activation functions</h2>
+  <div class="concept">
+    <ul>
+      <li><strong>Sigmoid</strong> $\sigma(z) = 1/(1+e^{-z})$ — smooth, (0,1). Rarely used in hidden layers now (gradients vanish for big |z|).</li>
+      <li><strong>tanh</strong> $\tanh(z)$ — smooth, (−1,1). Same vanishing-gradient issue.</li>
+      <li><strong>ReLU</strong> $\max(0, z)$ — zero for negatives, linear for positives. Current default for hidden layers. Cheap, avoids vanishing gradients.</li>
+      <li><strong>Softmax</strong> — for the output layer of multi-class classification. Turns a vector into a probability distribution.</li>
+    </ul>
+  </div>
+
+  <h2>3. Multi-layer (deep) networks</h2>
+  <div class="concept">
+    <p>Stack hidden layers: the outputs of one layer become the inputs of the next. With L layers, the $l$-th layer computes:</p>
+    <p>$$ A^{(l)} = g\!\left(W^{(l)} A^{(l-1)} + b^{(l)}\right) $$</p>
+    <p>Why go deep instead of wider? Empirically, multiple narrower layers learn <strong>hierarchical features</strong>: early layers learn simple patterns (edges), later layers combine them (textures → parts → objects). One very wide shallow layer can in principle represent the same functions, but much less efficiently in practice and with much worse generalization.</p>
+  </div>
+
+  <h2>4. How training actually works</h2>
+  <div class="concept">
+    <h3>Loss function</h3>
+    <p>Squared error for regression, cross-entropy for classification. Same losses as their shallow cousins, applied to the network's output.</p>
+
+    <h3>Gradient descent</h3>
+    <p>Adjust every weight in a direction that reduces the loss. Take a small step. Repeat. For small networks, the gradient is computable. For large ones, it's computed efficiently via <strong>backpropagation</strong> — chain rule applied layer by layer, going backwards from the output.</p>
+
+    <h3>Stochastic gradient descent (SGD)</h3>
+    <p>Instead of using the full dataset for every step (expensive, memory-hungry), use a random minibatch. Noisier gradients, but faster per step, and the noise often helps escape bad local minima.</p>
+
+    <h3>Modern optimizers</h3>
+    <p>Adam and its variants adapt the learning rate per parameter. Usually faster than plain SGD. SGD with momentum still wins for final generalization in some settings. Practical default: Adam, then refine.</p>
+  </div>
+
+  <h2>5. Regularization for networks</h2>
+  <div class="concept">
+    <p>Networks have millions of parameters. Without regularization they memorize. Tools:</p>
+    <ul>
+      <li><strong>Weight decay</strong>: L2 penalty on weights. Ridge regression at scale.</li>
+      <li><strong>Dropout</strong>: during training, randomly zero out a fraction of hidden units each pass. Forces redundancy. Like bagging many sub-networks.</li>
+      <li><strong>Early stopping</strong>: watch validation loss; stop when it plateaus. Acts like implicit regularization.</li>
+      <li><strong>Data augmentation</strong>: synthetically enlarge the training set by rotating, flipping, cropping, etc. The cheapest and often most effective.</li>
+    </ul>
+  </div>
+
+  <h2>6. Convolutional neural networks (CNNs) — for images</h2>
+  <div class="concept">
+    <p>A dense layer connects every input to every hidden unit. For a 224×224 image, that's ~50,000 inputs per layer, hundreds of millions of weights. Wasteful — most image patterns are <em>local</em> and <em>translation-invariant</em>.</p>
+
+    <p>CNNs bake in that prior:</p>
+    <ul>
+      <li><strong>Convolution layer</strong>: slide a small filter (say 3×3) across the image. Same filter everywhere (shared weights). Each filter detects one kind of local feature (edge, curve).</li>
+      <li><strong>Pooling layer</strong>: downsample by taking max or average in each small region. Makes the representation smaller and adds a little translation invariance.</li>
+      <li><strong>Stack these</strong>: early filters detect edges; deeper filters detect textures, parts, objects.</li>
+    </ul>
+    <p>CNNs turned image classification from impossible to solved between 2012 and 2015.</p>
+  </div>
+
+  <h2>7. Recurrent neural networks (RNNs) — for sequences</h2>
+  <div class="concept">
+    <p>For time series or text, you want the network to remember what came before. RNNs feed each hidden state forward as an extra input to the next step:</p>
+    <p>$$ h_t = g(W_h h_{t-1} + W_x x_t + b) $$</p>
+    <p>Same $W_h, W_x$ at every step (weight sharing over time). The hidden state accumulates memory.</p>
+
+    <h3>Problem: vanishing gradients</h3>
+    <p>Long sequences cause gradients to shrink or explode. Workarounds: LSTM and GRU cells add gates that protect long-term memory. Then transformers (self-attention) replaced RNNs for most sequence tasks after 2017, but the book's coverage focuses on LSTM/GRU.</p>
+  </div>
+
+  <h2>8. When do neural nets win?</h2>
+  <div class="concept">
+    <table>
+      <thead><tr><th>Situation</th><th>Best bet</th></tr></thead>
+      <tbody>
+        <tr><td>Tabular data, n in thousands, p modest</td><td>Gradient boosted trees (Ch 8)</td></tr>
+        <tr><td>Images, raw pixels</td><td>CNN</td></tr>
+        <tr><td>Text, raw tokens</td><td>Transformer (post-book; the direction deep learning went)</td></tr>
+        <tr><td>Small data with domain knowledge</td><td>Hand-crafted features + regularized linear/GBM</td></tr>
+        <tr><td>You need interpretability</td><td>Linear / GAM / small tree</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Deep learning is a weapon. It's overkill for most tabular problems and unrivaled for perception tasks (images, audio, text). ISLR is refreshingly honest that GBM still competes with — and sometimes beats — neural nets on tabular data.</div>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Write the equation for one hidden unit.</strong></div>
+      <div class="fc-back">A = g(β₀ + Σ βⱼ Xⱼ). Weighted sum of inputs plus bias, passed through a non-linear activation g.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Why are non-linear activations essential?</strong></div>
+      <div class="fc-back">Without them, stacking layers is algebraically equivalent to one linear transformation. The non-linearity is what gives networks their universal approximation power.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What is backpropagation?</strong></div>
+      <div class="fc-back">Chain rule applied to compute the gradient of the loss with respect to every weight, efficiently, by moving backward layer by layer from the output.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What is SGD?</strong></div>
+      <div class="fc-back">Stochastic gradient descent: update weights using the gradient computed on a small random batch instead of the full dataset. Faster and noisier, which helps generalization.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What does dropout do?</strong></div>
+      <div class="fc-back">During training, randomly zero out a fraction of hidden units each forward pass. Prevents co-adaptation, acts like ensembling many sub-networks.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Why use convolution layers for images?</strong></div>
+      <div class="fc-back">Image patterns are local and translation-invariant. Convolutions share weights across locations and detect local patterns — far fewer parameters than a dense layer, with a better prior.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>What's the vanishing gradient problem in RNNs?</strong></div>
+      <div class="fc-back">Gradients multiplied through many time steps shrink (or explode) exponentially, so the network can't learn long-range dependencies. LSTMs/GRUs add gates to preserve information.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>When is gradient boosting competitive with deep learning?</strong></div>
+      <div class="fc-back">Tabular data with modest n. On images/text/audio, deep learning wins by a huge margin because it can learn features from raw input.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Why might deeper networks generalize better than wider shallow ones?</strong></div>
+      <div class="fc-back">Depth encourages hierarchical feature composition (edges → parts → objects), which is a useful inductive bias and requires exponentially fewer parameters than a shallow network representing the same function.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">A coworker says "deep learning is always better." You have 2,000 rows, 15 features, and a deadline. What do you push back with?</div>
+  <div class="prompt">Your training loss drops to zero but test loss rises. Name three things you'd try, and what each is doing to fix it.</div>
+
+  <div class="chapter-nav">
+    <a href="ch09.html">← Ch 9</a>
+    <a href="ch11.html">Ch 11 · Survival Analysis →</a>
+  </div>
+</main>
+</body>
+</html>

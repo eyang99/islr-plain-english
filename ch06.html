@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 6 · Model Selection & Regularization · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch05.html">← Ch 5</a>
+  <a href="ch07.html">Ch 7 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 6</span>
+  <h1 class="serif">Model Selection & Regularization</h1>
+  <p class="subtitle">You have 500 predictors and 200 observations. Now what? Three strategies: pick fewer, shrink all of them, or project to a new space.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">When you have too many knobs, the model fits the noise. The cure is to either remove knobs or penalize big ones.</h3>
+    <p>Subset selection tries to keep only the useful predictors. Shrinkage (ridge, lasso) keeps all of them but pulls their coefficients toward zero. Dimension reduction (PCR, PLS) builds a smaller set of directions that capture the signal.</p>
+  </div>
+
+  <h2>1. Why not just least squares?</h2>
+  <div class="concept">
+    <p>Least squares minimizes RSS. If you have enough data relative to predictors (n much larger than p), this works beautifully. But things go south when:</p>
+    <ul>
+      <li><strong>p is close to n</strong>: variance of the coefficients explodes.</li>
+      <li><strong>p &gt; n</strong>: the solution isn't even unique (infinite lines fit perfectly).</li>
+      <li><strong>Correlated predictors</strong>: coefficient estimates bounce around wildly.</li>
+      <li><strong>Many irrelevant predictors</strong>: they contribute variance without helping bias.</li>
+    </ul>
+    <p>Solution: give up some bias to reduce variance, dramatically.</p>
+  </div>
+
+  <h2>2. Subset selection</h2>
+  <div class="concept">
+    <h3>Best subset</h3>
+    <p>Try every possible subset of predictors. For each size k, keep the best. Then choose across sizes using CV or an information criterion. Becomes computationally impossible past p ≈ 30 (2^30 models).</p>
+
+    <h3>Forward stepwise</h3>
+    <p>Start empty. Add the predictor that most improves fit. Repeat. Cheap, greedy, but can miss good combinations where a pair of predictors only works together.</p>
+
+    <h3>Backward stepwise</h3>
+    <p>Start with all predictors. Drop the least useful one at each step. Requires n &gt; p. Similar greedy problem.</p>
+
+    <h3>Picking the right size</h3>
+    <p>You can't use training RSS or R² — they monotonically improve with more predictors. Use instead:</p>
+    <ul>
+      <li><strong>C<sub>p</sub>, AIC, BIC</strong>: RSS + penalty for model size. Different penalty strengths. BIC penalizes harder, picks smaller models.</li>
+      <li><strong>Adjusted R²</strong>: accounts for degrees of freedom.</li>
+      <li><strong>Cross-validation</strong>: most reliable, no distributional assumptions. Just slower.</li>
+    </ul>
+    <div class="callout">BIC vs AIC: BIC prefers parsimony (smaller models), AIC is more generous. Neither is universally "right" — BIC is better if you believe the true model is among your candidates; AIC if you're doing pure prediction.</div>
+  </div>
+
+  <h2>3. Ridge regression — shrink toward zero</h2>
+  <div class="concept">
+    <p>Instead of minimizing RSS alone, minimize RSS plus a penalty on the size of the coefficients:</p>
+    <p>$$ \min_{\beta} \; \mathrm{RSS} + \lambda \sum_{j=1}^p \beta_j^2 $$</p>
+    <p>$\lambda \geq 0$ is the <strong>tuning parameter</strong>. When $\lambda = 0$: ordinary least squares. When $\lambda \to \infty$: all coefficients shrink to zero. Pick $\lambda$ via cross-validation.</p>
+
+    <div class="analogy">Ridge says: "I don't trust a model that leans hard on any one coefficient. Shrink them all toward zero. The ones that really matter will fight back and stay larger."</div>
+
+    <h3>Why it helps</h3>
+    <p>Shrinkage reduces variance (less sensitive to which sample you got) at the cost of a little bias. For correlated predictors especially, ridge stabilizes wildly fluctuating OLS estimates.</p>
+
+    <div class="callout warn"><strong>Always standardize</strong> your predictors before ridge or lasso. Otherwise the penalty punishes variables with large numeric scales more than variables with small scales — which is arbitrary nonsense.</div>
+  </div>
+
+  <h2>4. Lasso — shrink and select</h2>
+  <div class="concept">
+    <p>Same idea as ridge but with an L1 penalty instead of L2:</p>
+    <p>$$ \min_{\beta} \; \mathrm{RSS} + \lambda \sum_{j=1}^p |\beta_j| $$</p>
+    <p>The key difference: ridge's L2 penalty shrinks coefficients toward zero but never exactly to zero. Lasso's L1 penalty can set coefficients <em>exactly</em> to zero. That means lasso does automatic variable selection.</p>
+
+    <div class="analogy">Ridge is a <strong>fader</strong> — it turns every coefficient down proportionally. Lasso is a <strong>bouncer</strong> — it kicks weak coefficients all the way out the door and keeps only the strong ones.</div>
+
+    <div class="viz">
+      <div class="controls">
+        <label>λ (log scale): <input type="range" id="lam" min="-3" max="2" step="0.05" value="-2" /></label>
+        <span class="readout" id="lamReadout"></span>
+      </div>
+      <svg id="regSvg" viewBox="0 0 600 260" aria-label="Ridge vs Lasso coefficients"></svg>
+      <p class="tagline">10 coefficients as λ increases. Orange = ridge (smooth shrinkage). Blue = lasso (hits zero and stays). Notice how lasso zeros out weak predictors.</p>
+    </div>
+  </div>
+
+  <h2>5. Ridge vs Lasso — which to pick?</h2>
+  <div class="concept">
+    <ul>
+      <li><strong>Many of the true coefficients are truly zero</strong> (sparse truth) → lasso wins. It does the selection for you.</li>
+      <li><strong>All predictors contribute a little</strong> (dense truth) → ridge wins. Lasso would throw away genuinely useful variables.</li>
+      <li><strong>Correlated predictors where you want only one</strong> → lasso will (arbitrarily) pick one and zero the rest.</li>
+      <li><strong>Want to keep correlated predictors together</strong> → elastic net (a mix of ridge and lasso) or group lasso.</li>
+    </ul>
+    <p>Don't know which truth you're in? Run both, cross-validate, pick the winner. Or use elastic net (α = 0 is ridge, α = 1 is lasso, α in between blends).</p>
+  </div>
+
+  <h2>6. Dimension reduction: PCR and PLS</h2>
+  <div class="concept">
+    <p>Different idea: build new predictors that are linear combinations of your originals, and use a small number of these combinations.</p>
+
+    <h3>Principal Components Regression (PCR)</h3>
+    <p>Step 1: run PCA (Ch 12) on the predictors to find directions of greatest variance. Step 2: regress Y on the first M components. Step 3: tune M via CV.</p>
+
+    <div class="callout warn"><strong>Catch:</strong> PCA looks only at X, not Y. There's no guarantee that directions of high X-variance are also directions that predict Y. They usually are in practice. When they're not, PCR disappoints.</div>
+
+    <h3>Partial Least Squares (PLS)</h3>
+    <p>Same structure as PCR but the components are chosen to have <em>high covariance with Y</em>, not just high X-variance. In theory this should help. In practice, PLS and PCR are often similar, and lasso/ridge usually dominate both.</p>
+  </div>
+
+  <h2>7. High-dimensional data (p &gt; n)</h2>
+  <div class="concept">
+    <p>Genomics. Text. Images before deep learning. You have more features than observations.</p>
+    <ul>
+      <li>OLS is undefined (infinite solutions fit perfectly).</li>
+      <li>R² is meaningless — can be pushed to 1.0 with garbage.</li>
+      <li>You <em>must</em> use shrinkage, subset selection, or dimension reduction.</li>
+      <li>Report test error via cross-validation, not training fit.</li>
+      <li>Even then, be honest about "multicollinearity at scale": coefficients aren't identifiable, so don't read the story too confidently.</li>
+    </ul>
+  </div>
+
+  <div class="card big-idea">
+    <h3 style="margin-top:0">Mental model</h3>
+    <p>OLS says "do the best I can with the data." Ridge says "do the best I can, but prefer small coefficients." Lasso says "do the best I can, and actively kill the weak ones." PCR/PLS say "throw the whole thing into a smaller basis first." All are trading a dab of bias for a big drop in variance. That's the free lunch of regularization.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Why does OLS break down when p is close to or exceeds n?</strong></div>
+      <div class="fc-back">Coefficient variance explodes, and when p ≥ n, least-squares has infinitely many solutions fitting training data perfectly. Regularization or subset selection is required.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Describe forward stepwise selection.</strong></div>
+      <div class="fc-back">Start with an empty model. At each step, add the single predictor that most improves fit. Stop by CV or an information criterion. Greedy, cheap, can miss good combinations.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Write the ridge penalty.</strong></div>
+      <div class="fc-back">λ · Σβⱼ² (L2). Added to RSS. Shrinks coefficients smoothly toward zero but never to exactly zero.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>Write the lasso penalty.</strong></div>
+      <div class="fc-back">λ · Σ|βⱼ| (L1). Can set coefficients exactly to zero → automatic variable selection.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Why standardize predictors before ridge/lasso?</strong></div>
+      <div class="fc-back">The penalty treats all coefficients equally. If one predictor is measured in thousands and another in fractions, their coefficients are on vastly different scales and the penalty becomes scale-dependent and meaningless.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Ridge vs lasso — sparse vs dense truth?</strong></div>
+      <div class="fc-back">Sparse truth (few nonzero coefficients): lasso wins. Dense truth (many small contributions): ridge wins. Unsure: try both with CV, or use elastic net.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>How is λ chosen?</strong></div>
+      <div class="fc-back">By cross-validation. Fit ridge/lasso over a grid of λ values; pick the λ that minimizes CV error.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>PCR vs PLS — what's the difference?</strong></div>
+      <div class="fc-back">PCR picks components by maximizing X-variance (ignores Y). PLS picks components by maximizing X-Y covariance. PLS is theoretically smarter; in practice they often tie.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>What is elastic net?</strong></div>
+      <div class="fc-back">A penalty that mixes L1 and L2: α·|βⱼ| + (1−α)·βⱼ². Gets lasso's selection with ridge's grouping for correlated predictors.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>Why can't you trust coefficients from a p ≫ n fit?</strong></div>
+      <div class="fc-back">They're not identifiable — many different coefficient vectors fit equally well. The model may predict well, but "which variable matters" is not a sensible question without much stronger assumptions.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You have 1000 genes and 80 patients. Your postdoc runs a plain linear regression and gets a model with huge R². Why are you worried?</div>
+  <div class="prompt">Ridge and lasso both shrink coefficients. Why does lasso give you sparse coefficients and ridge doesn't?</div>
+  <div class="prompt">You have 50 correlated predictors all plausibly relevant. Lasso picks one and zeros the rest. What's a better approach?</div>
+
+  <div class="chapter-nav">
+    <a href="ch05.html">← Ch 5</a>
+    <a href="ch07.html">Ch 7 · Beyond Linearity →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('regSvg');
+  const slider = document.getElementById('lam');
+  const out = document.getElementById('lamReadout');
+  if (!svg) return;
+  const W = 600, H = 260, pad = 30;
+  // 10 "true" coefficients: some strong, some weak, some zero
+  const trueBeta = [2.5, -2.0, 1.5, -1.2, 0.8, -0.5, 0.2, -0.1, 0, 0];
+
+  // Ridge: beta / (1 + lambda). Lasso: soft-threshold(beta, lambda).
+  function ridge(b, lam) { return b / (1 + lam); }
+  function lasso(b, lam) {
+    if (b > lam) return b - lam;
+    if (b < -lam) return b + lam;
+    return 0;
+  }
+
+  function render() {
+    const logLam = parseFloat(slider.value);
+    const lam = Math.pow(10, logLam);
+    const X = i => pad + (i + 0.5) / 10 * (W - 2 * pad) * 0.5;
+    const X2 = i => pad + (W - 2 * pad) * 0.5 + (i + 0.5) / 10 * (W - 2 * pad) * 0.5;
+    const yRange = 3;
+    const Y = v => H / 2 - (v / yRange) * (H / 2 - pad);
+
+    let bars = '';
+    for (let i = 0; i < 10; i++) {
+      const r = ridge(trueBeta[i], lam);
+      const l = lasso(trueBeta[i], lam);
+      const rY = Y(r);
+      const lY = Y(l);
+      const midY = H / 2;
+      bars += `<rect x="${X(i) - 8}" y="${Math.min(rY, midY)}" width="16" height="${Math.abs(rY - midY)}" fill="var(--accent)" opacity="0.8"/>`;
+      bars += `<rect x="${X2(i) - 8}" y="${Math.min(lY, midY)}" width="16" height="${Math.abs(lY - midY)}" fill="#3a6fb0" opacity="0.8"/>`;
+    }
+    // Baseline
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${H/2}" x2="${W-pad}" y2="${H/2}" stroke="var(--ink-3)"/>
+      <line x1="${pad + (W - 2*pad)*0.5}" y1="${pad}" x2="${pad + (W - 2*pad)*0.5}" y2="${H-pad}" stroke="var(--ink-3)" stroke-dasharray="2,3"/>
+      ${bars}
+      <text x="${pad + 10}" y="${pad + 14}" font-size="12" fill="var(--accent)" font-weight="600">Ridge</text>
+      <text x="${pad + (W - 2*pad)*0.5 + 10}" y="${pad + 14}" font-size="12" fill="#3a6fb0" font-weight="600">Lasso</text>
+      <text x="${pad}" y="${H - 8}" font-size="10" fill="var(--ink-3)">predictors 1..10 (true β = 2.5, -2, 1.5, -1.2, 0.8, -0.5, 0.2, -0.1, 0, 0)</text>
+    `;
+    out.textContent = `λ = ${lam.toFixed(3)}  ·  lasso zeros weak coefficients first`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 7 · Beyond Linearity · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch06.html">← Ch 6</a>
+  <a href="ch08.html">Ch 8 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 7</span>
+  <h1 class="serif">Moving Beyond Linearity</h1>
+  <p class="subtitle">A line is rarely the truth. These tools let you stay inside the "linear regression" machinery while fitting curves, humps, and local wiggles.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Replace each predictor with a flexible set of transformations, then run linear regression on those transformations.</h3>
+    <p>Every method in this chapter is a clever way to build new basis functions — polynomials, step functions, splines — and feed them to the linear machinery. You get curves without leaving the framework you already know.</p>
+  </div>
+
+  <h2>1. Polynomial regression</h2>
+  <div class="concept">
+    <p>Add $X^2, X^3, \ldots, X^d$ as additional predictors. The fit is now a degree-d polynomial in X. Still linear in the parameters, still solved by least squares.</p>
+    <ul>
+      <li><strong>Pros</strong>: simple extension, captures smooth nonlinearity.</li>
+      <li><strong>Cons</strong>: high-degree polynomials get wild at the edges of the data ("Runge's phenomenon"). Ugly things happen when extrapolating.</li>
+    </ul>
+    <div class="callout warn">Past degree 4-5, polynomials are usually a bad idea. Splines (below) give you the flexibility without the tail explosions.</div>
+  </div>
+
+  <h2>2. Step functions</h2>
+  <div class="concept">
+    <p>Bin X into regions. In each bin, predict a constant. That's it — a staircase. Implementable by creating indicator variables for each bin and running linear regression.</p>
+    <p>Used when the relationship has natural breakpoints (age groups, income brackets) and you want clean "within this bin, the predicted value is X" interpretation. Wastes information within bins.</p>
+  </div>
+
+  <h2>3. Splines — the right way to get a smooth curve</h2>
+  <div class="concept">
+    <p>A spline is a piecewise polynomial glued together with <em>smoothness constraints</em> at the joints (called knots). You get local flexibility without global wildness.</p>
+
+    <h3>Regression splines</h3>
+    <p>Choose the number and location of knots. Fit cubic polynomials in each interval, requiring the function, its first derivative, and its second derivative to agree at each knot. Result: a smooth curve that adapts locally.</p>
+
+    <h3>Natural cubic splines</h3>
+    <p>Like cubic splines but with a constraint: linear beyond the outermost knots. This tames the tail behavior that ordinary polynomials suffer from. In practice, natural cubic splines are what you should reach for.</p>
+
+    <h3>Smoothing splines</h3>
+    <p>A different formulation. Instead of placing knots manually, put a knot at every data point and penalize wiggliness directly:</p>
+    <p>$$ \min_g \; \sum (y_i - g(x_i))^2 + \lambda \int g''(x)^2 \, dx $$</p>
+    <p>The integral of the squared second derivative measures how much the curve bends. $\lambda$ controls how smooth — high $\lambda$ gives a straight line, low $\lambda$ gives an interpolator.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Knots: <input type="range" id="splK" min="2" max="15" value="5"/></label>
+        <span class="readout" id="splReadout">5 knots</span>
+      </div>
+      <svg id="splSvg" viewBox="0 0 600 260" aria-label="Regression spline"></svg>
+      <p class="tagline">Regression spline with uniformly placed knots. More knots = more flexibility. Beyond a point you just chase noise.</p>
+    </div>
+  </div>
+
+  <h2>4. Local regression (LOESS / LOWESS)</h2>
+  <div class="concept">
+    <p>To predict at $x_0$, fit a low-degree polynomial using only the points nearby, weighted by proximity. Repeat at every point. Result: a smooth curve that adapts to local structure.</p>
+    <p>Knob: the <strong>span</strong> (fraction of points used). Small span = wiggly; large span = smooth. Basically a bias-variance knob.</p>
+    <div class="analogy">Local regression is KNN regression with a polynomial fit at each neighborhood instead of a flat average. More graceful at the data edges.</div>
+  </div>
+
+  <h2>5. Generalized Additive Models (GAMs)</h2>
+  <div class="concept">
+    <p>A GAM lets each predictor have its own nonlinear function, then adds them up:</p>
+    <p>$$ Y = \beta_0 + f_1(X_1) + f_2(X_2) + \dots + f_p(X_p) + \epsilon $$</p>
+    <p>Each $f_j$ can be a smoothing spline, a polynomial, a step function — whatever. The key word is <strong>additive</strong>: no interactions by default (you'd add them manually).</p>
+
+    <h3>Why GAMs are great</h3>
+    <ul>
+      <li><strong>Flexible</strong>: each predictor can be nonlinear in its own way.</li>
+      <li><strong>Interpretable</strong>: you can plot $f_j(X_j)$ for each predictor and read the story.</li>
+      <li><strong>Linear in the functions</strong>: keeps a lot of the regression machinery (CIs, tests).</li>
+    </ul>
+
+    <h3>Why GAMs are not always great</h3>
+    <ul>
+      <li>No interactions by default — you have to opt in.</li>
+      <li>Don't scale as well as trees/NNs for very high-dimensional, low-signal data.</li>
+    </ul>
+    <div class="callout ok"><strong>When GAMs shine:</strong> medium-dimensional problems where you suspect some variables bend but you want to see and defend every relationship. Medicine, economics, policy.</div>
+  </div>
+
+  <h2>6. How to pick the flexibility</h2>
+  <div class="concept">
+    <p>All these methods have a flexibility knob — polynomial degree, number of knots, smoothing parameter, span. All of them live and die by cross-validation (Ch 5) or an information criterion. Use it; don't eyeball.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Why is polynomial regression still "linear"?</strong></div>
+      <div class="fc-back">Linear in the parameters β, not in X. You're doing linear regression on transformed predictors (X, X², X³, …).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What's wrong with high-degree polynomials?</strong></div>
+      <div class="fc-back">They get wild at the edges of the data (Runge's phenomenon) and extrapolate badly. Use splines instead beyond degree 4-5.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What is a spline?</strong></div>
+      <div class="fc-back">A piecewise polynomial where the pieces are joined at "knots" with smoothness constraints (continuous function and derivatives).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What does "natural" mean in natural cubic spline?</strong></div>
+      <div class="fc-back">The spline is constrained to be linear beyond the outermost knots. This tames tail behavior and reduces variance at the edges.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What does λ control in a smoothing spline?</strong></div>
+      <div class="fc-back">The tradeoff between fitting the data (RSS) and smoothness (integral of squared second derivative). High λ = straight line. Low λ = interpolator.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Describe LOESS in one sentence.</strong></div>
+      <div class="fc-back">Fit a low-degree polynomial at each target point, using only the nearby points weighted by distance, to get a smooth curve.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>What is a GAM?</strong></div>
+      <div class="fc-back">A model of the form Y = β₀ + f₁(X₁) + f₂(X₂) + … where each fⱼ is a flexible smooth function. Additive: no interactions unless you add them.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>GAM's main strength over a random forest?</strong></div>
+      <div class="fc-back">Interpretability. You can plot each fⱼ(Xⱼ) and say "this is how variable j bends the prediction," which a forest can't tell you directly.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">Why use a natural cubic spline with 5 knots instead of a 10th-degree polynomial, if both have roughly the same effective flexibility?</div>
+  <div class="prompt">A coworker fits a GAM and concludes "age has no effect" because its p-value is 0.3. But the partial plot of f(age) shows a clear U-shape. What's happening?</div>
+
+  <div class="chapter-nav">
+    <a href="ch06.html">← Ch 6</a>
+    <a href="ch08.html">Ch 8 · Trees →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('splSvg');
+  const slider = document.getElementById('splK');
+  const out = document.getElementById('splReadout');
+  if (!svg) return;
+  const W = 600, H = 260, pad = 32;
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(9);
+  const pts = [];
+  for (let i = 0; i < 60; i++) {
+    const x = rng();
+    const y = Math.sin(3 * x) + 0.5 * Math.cos(7 * x) + (rng() - 0.5) * 0.4;
+    pts.push([x, y]);
+  }
+  function plus3(v) { return v > 0 ? v*v*v : 0; }
+  // Truncated power basis for cubic spline with knots k
+  function basis(x, knots) {
+    const b = [1, x, x*x, x*x*x];
+    for (const k of knots) b.push(plus3(x - k));
+    return b;
+  }
+  function solve(A, bv) {
+    const n = A.length;
+    for (let i = 0; i < n; i++) {
+      let piv = i;
+      for (let j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+      [A[i], A[piv]] = [A[piv], A[i]];
+      [bv[i], bv[piv]] = [bv[piv], bv[i]];
+      const d = A[i][i] || 1e-10;
+      for (let j = i; j < n; j++) A[i][j] /= d;
+      bv[i] /= d;
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const f = A[j][i];
+        for (let k = i; k < n; k++) A[j][k] -= f * A[i][k];
+        bv[j] -= f * bv[i];
+      }
+    }
+    return bv;
+  }
+  function fitSpline(K) {
+    const knots = [];
+    for (let i = 1; i <= K; i++) knots.push(i / (K + 1));
+    const n = pts.length;
+    const p = 4 + knots.length;
+    const XtX = Array.from({length: p}, () => new Array(p).fill(0));
+    const Xty = new Array(p).fill(0);
+    for (const [x, y] of pts) {
+      const b = basis(x, knots);
+      for (let i = 0; i < p; i++) {
+        Xty[i] += b[i] * y;
+        for (let j = 0; j < p; j++) XtX[i][j] += b[i] * b[j];
+      }
+    }
+    for (let i = 0; i < p; i++) XtX[i][i] += 1e-6;
+    const coefs = solve(XtX, Xty);
+    return { coefs, knots };
+  }
+  function predict(x, fit) {
+    const b = basis(x, fit.knots);
+    let y = 0;
+    for (let i = 0; i < b.length; i++) y += b[i] * fit.coefs[i];
+    return y;
+  }
+  function render() {
+    const K = parseInt(slider.value, 10);
+    const fit = fitSpline(K);
+    const X = x => pad + x * (W - 2 * pad);
+    const Y = y => H - pad - ((y + 2) / 4) * (H - 2 * pad);
+    let dots = '';
+    for (const [x, y] of pts) dots += `<circle cx="${X(x)}" cy="${Y(y)}" r="2.5" fill="var(--accent)" opacity="0.6"/>`;
+    let path = '';
+    for (let i = 0; i <= 200; i++) {
+      const x = i / 200;
+      const y = predict(x, fit);
+      path += (i === 0 ? 'M' : 'L') + X(x) + ',' + Math.max(pad, Math.min(H-pad, Y(y))) + ' ';
+    }
+    let knotLines = '';
+    for (const k of fit.knots) {
+      knotLines += `<line x1="${X(k)}" y1="${pad}" x2="${X(k)}" y2="${H-pad}" stroke="var(--ink-3)" stroke-dasharray="2,3" stroke-width="0.5"/>`;
+    }
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="var(--ink-3)"/>
+      ${knotLines}
+      ${dots}
+      <path d="${path}" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+    `;
+    out.textContent = `${K} knots  ·  piecewise cubic spline`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

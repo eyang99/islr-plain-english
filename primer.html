@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Probability & Stats Primer · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch01.html">Ch 1 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Primer · foundations</span>
+  <h1 class="serif">Probability & Statistics, finally</h1>
+  <p class="subtitle">The stuff every ML book assumes you remember. Not a full course — the minimum you need so the rest of this site doesn't feel like a foreign language.</p>
+
+  <div class="card big-idea">
+    <span class="chip">The one-sentence version</span>
+    <h3 style="margin-top:10px">Probability is forward. Statistics is backward.</h3>
+    <p>Probability: "here's the coin, predict the flips." Statistics: "here are the flips, guess the coin." Every formula in this section serves one of those two jobs.</p>
+  </div>
+
+  <h2>1. Random variables & distributions</h2>
+  <div class="concept">
+    <h3>Random variable</h3>
+    <p>A number whose value depends on something you can't fully predict. "How long until my Uber arrives" is a random variable. "The temperature at noon tomorrow" is a random variable. "2+2" is not.</p>
+    <div class="analogy">A random variable is a <strong>factory that stamps out numbers.</strong> The distribution is the <strong>recipe</strong> that says which numbers are common and which are rare.</div>
+
+    <h3>Distribution</h3>
+    <p>A map from "possible value" → "how likely." Draw the histogram you'd get if you ran the factory a million times. That's the distribution.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Distribution shape
+          <select id="distType">
+            <option value="normal">Normal (bell curve)</option>
+            <option value="uniform">Uniform (flat)</option>
+            <option value="exp">Exponential (decaying)</option>
+            <option value="skew">Right-skewed</option>
+          </select>
+        </label>
+        <span class="readout" id="distReadout"></span>
+      </div>
+      <svg id="distSvg" viewBox="0 0 600 240" aria-label="Distribution shape"></svg>
+    </div>
+  </div>
+
+  <div class="concept">
+    <h3>The distributions you actually need to know</h3>
+    <table>
+      <thead><tr><th>Name</th><th>When it shows up</th><th>Shape</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Normal</strong> (Gaussian)</td><td>Anything that's a sum of many small independent effects. Heights, errors, averages.</td><td>Symmetric bell</td></tr>
+        <tr><td><strong>Bernoulli</strong></td><td>Single yes/no event. One coin flip.</td><td>Two spikes</td></tr>
+        <tr><td><strong>Binomial</strong></td><td>Count of successes in <em>n</em> independent yes/no trials.</td><td>Hill</td></tr>
+        <tr><td><strong>Poisson</strong></td><td>Count of rare events in a fixed window. Emails per hour, goals per game.</td><td>Skewed hill</td></tr>
+        <tr><td><strong>Exponential</strong></td><td>Time between rare events (the flip side of Poisson).</td><td>Decay from 0</td></tr>
+        <tr><td><strong>Uniform</strong></td><td>Every value in a range equally likely. Rare in the wild, common as an assumption.</td><td>Flat rectangle</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">You don't need to memorize the density formulas. You need to recognize the <em>shape</em> and know which <em>situation</em> produces which shape.</div>
+  </div>
+
+  <h2>2. Expectation & variance</h2>
+  <div class="concept">
+    <h3>Expected value E[X] — the center of gravity</h3>
+    <p>If you ran the random variable a million times and averaged the results, that's the expected value. It's the long-run mean. It does <em>not</em> have to be a value the variable can actually take — the expected value of a die roll is 3.5, which no die ever shows.</p>
+    <div class="analogy">Expectation is where the distribution <strong>balances on a pencil</strong>. Not the most common value — the balance point.</div>
+
+    <h3>Variance — how spread out</h3>
+    <p>Average squared distance from the mean. Small variance = tight around the mean. Big variance = wild. We square the distances so negatives don't cancel positives.</p>
+    <p><strong>Standard deviation</strong> is just the square root of variance, put back in the original units. That's why everyone quotes σ, not σ².</p>
+
+    <details class="math"><summary>Formulas</summary>
+      <p>$$ E[X] = \sum_x x \cdot P(X=x) \quad\text{(discrete)} \qquad E[X] = \int x f(x)\,dx \quad\text{(continuous)} $$</p>
+      <p>$$ \mathrm{Var}(X) = E[(X - E[X])^2] = E[X^2] - (E[X])^2 $$</p>
+      <p>Useful rule: $\mathrm{Var}(aX+b) = a^2\mathrm{Var}(X)$. Shifting doesn't change spread; scaling scales it quadratically.</p>
+    </details>
+  </div>
+
+  <h2>3. Covariance & correlation</h2>
+  <div class="concept">
+    <h3>Covariance</h3>
+    <p>Do two variables move together? If X is above its mean when Y is above its mean (and below when below), covariance is positive. If they move opposite, it's negative. If they're unrelated, it's zero.</p>
+    <h3>Correlation</h3>
+    <p>Covariance is in weird units (X-units times Y-units). <strong>Correlation</strong> divides by both standard deviations so it lives in [−1, +1] — unitless, comparable across problems.</p>
+    <div class="callout warn"><strong>Correlation is not causation</strong> — you know this. But also: <strong>zero correlation is not independence.</strong> Correlation only measures <em>linear</em> relationships. Y = X² has zero correlation with X over a symmetric range, but they're perfectly dependent.</div>
+  </div>
+
+  <h2>4. The Central Limit Theorem</h2>
+  <div class="concept">
+    <h3>The single most useful result in statistics</h3>
+    <p>Take <em>any</em> distribution (skewed, ugly, whatever) with a finite mean and variance. Pull <em>n</em> samples from it. Take the average. Do that many times and plot those averages. As <em>n</em> grows, the distribution of averages looks like a bell curve. Every time. Regardless of what you started with.</p>
+
+    <div class="analogy">The CLT is why averaging <strong>washes out weirdness</strong>. One flip of a weird coin is weird. The average of 100 flips looks Gaussian no matter how weird the coin.</div>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Sample size n: <input type="range" id="cltN" min="1" max="50" value="1" /></label>
+        <span class="readout" id="cltReadout">n = 1</span>
+      </div>
+      <svg id="cltSvg" viewBox="0 0 600 240" aria-label="CLT demo"></svg>
+      <p class="tagline">Drag n up. Watch the ugly skewed parent distribution become bell-shaped as you average more samples.</p>
+    </div>
+
+    <div class="callout"><strong>Why you care for ML:</strong> Every confidence interval, every p-value, every standard error in the book leans on this theorem. It's what lets you say "my average is probably within ±2 standard errors of the truth" without knowing the truth.</div>
+  </div>
+
+  <h2>5. Sampling, estimators, standard error</h2>
+  <div class="concept">
+    <h3>Population vs sample</h3>
+    <p><strong>Population:</strong> every possible observation. Usually you can't see it. <strong>Sample:</strong> the subset you actually measured. Stats is the art of saying something about the population using only the sample.</p>
+
+    <h3>Estimator</h3>
+    <p>Any formula that takes a sample and spits out a guess about the population. The sample mean is an estimator of the population mean. It's also a random variable — a different sample gives a different estimate.</p>
+
+    <h3>Standard error</h3>
+    <p>The standard deviation <em>of the estimator</em> — how much your guess would bounce around if you re-did the whole study. Not the same as the standard deviation of the data. For the sample mean: $SE = \sigma/\sqrt{n}$. More data → tighter estimate, shrinking as $\sqrt{n}$, which is why doubling accuracy costs 4× the data.</p>
+
+    <div class="callout warn"><strong>Common confusion:</strong> "Standard deviation" measures spread in the <em>data</em>. "Standard error" measures spread in your <em>estimate</em>. They have different symbols and different meanings. ML docs abuse this constantly.</div>
+  </div>
+
+  <h2>6. Confidence intervals</h2>
+  <div class="concept">
+    <p>"My estimate is 5.2 ± 0.4 (95% CI)" means: if I re-ran this study many times, 95% of the intervals I'd construct this way would contain the true value. It does <em>not</em> mean "there's a 95% chance the truth is in this specific interval" — the truth is fixed, the interval is random.</p>
+    <div class="analogy">A CI is a <strong>net</strong>. The fish (the true value) is sitting still. You throw many nets. 95% of them catch the fish. You're looking at one net — did this one catch it? You don't know. You just know the method works 95 times out of 100.</div>
+    <details class="math"><summary>Formula for mean</summary>
+      <p>$$ \bar{x} \pm z_{\alpha/2} \cdot \frac{s}{\sqrt{n}} $$</p>
+      <p>For 95%, $z \approx 1.96$. If $n$ is small, use $t$-distribution instead of $z$.</p>
+    </details>
+  </div>
+
+  <h2>7. Hypothesis tests & p-values</h2>
+  <div class="concept">
+    <h3>The logic</h3>
+    <p>You suspect something (alternative H₁). You set up a strawman — nothing is happening (null H₀). You ask: <strong>if the strawman were true, how surprising is my data?</strong> That "how surprising" number is the p-value.</p>
+
+    <h3>p-value, in one sentence</h3>
+    <p><strong>The probability of seeing data at least this extreme, assuming the null is true.</strong> Small p = my data would be weird if the null were true → reject the null. Big p = my data is consistent with the null → don't reject.</p>
+
+    <div class="callout warn">
+      <strong>p &lt; 0.05 does NOT mean</strong>: "there's a 95% chance my hypothesis is true," or "the effect is big," or "the result matters." It <em>only</em> means "this data would be rare if nothing were going on." Chapter 13 is devoted to why this gets abused.
+    </div>
+
+    <h3>Type I vs Type II error</h3>
+    <table>
+      <thead><tr><th></th><th>Reject H₀</th><th>Fail to reject H₀</th></tr></thead>
+      <tbody>
+        <tr><th>H₀ true</th><td style="color:var(--danger)">Type I (false positive). Rate = α.</td><td>Correct</td></tr>
+        <tr><th>H₀ false</th><td>Correct. Rate = power = 1−β.</td><td style="color:var(--danger)">Type II (false negative). Rate = β.</td></tr>
+      </tbody>
+    </table>
+    <div class="analogy">Type I = <strong>crying wolf</strong> (wolf isn't there but you yelled). Type II = <strong>missing the wolf</strong> (it was there, you slept).</div>
+  </div>
+
+  <h2>8. Bayes' rule — the update machine</h2>
+  <div class="concept">
+    <p>Before you see evidence, you have a guess (prior). After you see evidence, you have a new guess (posterior). Bayes' rule tells you how to update.</p>
+    <p>$$ P(H \mid E) = \frac{P(E \mid H) \cdot P(H)}{P(E)} $$</p>
+    <p>In English: <em>posterior ∝ likelihood × prior</em>.</p>
+
+    <div class="analogy">Your prior is your starting opinion. The likelihood is "how well does this evidence fit each possible world?" You multiply them and normalize. Done.</div>
+
+    <h3>The classic medical-test gotcha</h3>
+    <p>A disease affects 1 in 1,000 people. A test is 99% accurate both ways. You test positive. What's the chance you actually have it?</p>
+    <p>Most people say 99%. Actual answer is about <strong>9%</strong>. Why? Start with 10,000 people. ~10 have the disease; the test catches ~9.9 of them. Of the 9,990 healthy people, 1% test positive — that's ~99.9 false alarms. So out of ~109 positives, only ~10 are real. The prior (how rare the disease is) dominates.</p>
+
+    <div class="callout"><strong>ML connection:</strong> Bayes' rule is the backbone of naive Bayes classification (Ch 4), and the philosophical foundation of Bayesian ML. Any time you see "prior" or "posterior," this formula is under the hood.</div>
+  </div>
+
+  <h2>9. Maximum Likelihood Estimation (MLE)</h2>
+  <div class="concept">
+    <p>Given a blob of data and a family of candidate distributions, MLE picks the distribution <strong>under which your observed data would have been most likely</strong>. Turn the knob (the parameter) until the density curve hugs your points as tightly as it can.</p>
+    <div class="analogy">You see a scatter of darts. MLE asks: "of all the possible dartboards and throwing styles, which one would most likely have produced this pattern?" Pick that one.</div>
+    <p>Almost every model in this book is fit by some form of MLE (linear regression with Gaussian errors, logistic regression, etc.) or by a penalized version (ridge/lasso add a penalty to the likelihood).</p>
+  </div>
+
+  <h2>10. The five-word summary</h2>
+  <div class="card big-idea">
+    <h3 style="margin-top:0">If you close this tab remembering only this:</h3>
+    <ol>
+      <li><strong>Distribution</strong> = the recipe for the number factory.</li>
+      <li><strong>Mean</strong> = balance point. <strong>Variance</strong> = average squared spread.</li>
+      <li><strong>CLT</strong> = averages go Gaussian, even when the data doesn't.</li>
+      <li><strong>Standard error</strong> ≠ standard deviation. SE shrinks as $1/\sqrt{n}$.</li>
+      <li><strong>p-value</strong> = P(data this weird | null is true). Not P(null is true | data).</li>
+      <li><strong>Bayes</strong> = posterior ∝ likelihood × prior. Priors matter more than your gut thinks.</li>
+    </ol>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <p class="tagline">Click a card to flip. Arrow keys to navigate. Space to flip. If you can't answer, scroll up.</p>
+
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>What's a random variable?</strong></div>
+      <div class="fc-back">A number whose value comes from a chance process. Think "factory that stamps out numbers according to a recipe (distribution)."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Expectation in one phrase.</strong></div>
+      <div class="fc-back">The long-run average. The balance point of the distribution. Doesn't have to be a value X can actually take.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Why square the deviations for variance?</strong></div>
+      <div class="fc-back">So negatives don't cancel positives, and so big deviations are penalized more than small ones. SD = √variance puts it back in the original units.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>State the CLT in one sentence.</strong></div>
+      <div class="fc-back">The distribution of the sample mean approaches a Gaussian as n grows, regardless of the shape of the underlying distribution (given finite mean/variance).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Standard deviation vs standard error?</strong></div>
+      <div class="fc-back">SD = spread of the data. SE = spread of the estimator (like the sample mean). SE = SD / √n.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>What does a 95% confidence interval actually mean?</strong></div>
+      <div class="fc-back">If you re-ran the study many times, 95% of the intervals would contain the true parameter. It's a property of the method, not of this specific interval.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Define p-value.</strong></div>
+      <div class="fc-back">Probability of seeing data at least this extreme IF the null hypothesis were true. Not the probability the null is true.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>Type I vs Type II error?</strong></div>
+      <div class="fc-back">Type I: reject true null (false positive, crying wolf). Type II: fail to reject false null (false negative, missing the wolf). α = Type I rate, β = Type II rate, power = 1 − β.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Bayes' rule in words.</strong></div>
+      <div class="fc-back">Posterior ∝ likelihood × prior. Update your belief by multiplying your starting belief by how well each hypothesis fits the evidence.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>What does Maximum Likelihood do?</strong></div>
+      <div class="fc-back">Picks the parameter values that make the observed data most probable. Twist the knob until the density curve hugs your points tightest.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">11</span>
+      <div class="fc-front"><strong>Why doesn't zero correlation imply independence?</strong></div>
+      <div class="fc-back">Correlation measures LINEAR relationships only. Y = X² has zero correlation with X over a symmetric range but is perfectly dependent.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">12</span>
+      <div class="fc-front"><strong>You test positive on a 99% accurate test for a disease affecting 1 in 1000. Chance you have it?</strong></div>
+      <div class="fc-back">≈ 9%. Low base rate (prior) dominates. Out of 10,000: ~10 sick, 9.9 true positives; ~9990 healthy, ~99.9 false positives → ~10/110 real.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">Explain the CLT to a friend without using the word "distribution."</div>
+  <div class="prompt">Your friend says "p &lt; 0.05 means there's a 95% chance my result is real." Correct them in two sentences.</div>
+  <div class="prompt">Why does standard error shrink with √n, not with n? What does that mean practically for how much data you need?</div>
+
+  <div class="chapter-nav">
+    <a href="index.html">← Home</a>
+    <a href="ch01.html">Ch 1 · Introduction →</a>
+  </div>
+</main>
+
+<script>
+// Distribution viz
+(function() {
+  const svg = document.getElementById('distSvg');
+  const sel = document.getElementById('distType');
+  const out = document.getElementById('distReadout');
+  if (!svg) return;
+  const W = 600, H = 240, pad = 30;
+
+  function pdf(kind, x) {
+    if (kind === 'normal') return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+    if (kind === 'uniform') return (x >= -2 && x <= 2) ? 0.25 : 0;
+    if (kind === 'exp') return x >= 0 ? Math.exp(-x) : 0;
+    if (kind === 'skew') { // lognormal-ish
+      if (x <= 0.01) return 0;
+      const m = 0, s = 0.6;
+      return Math.exp(-0.5 * Math.pow((Math.log(x) - m) / s, 2)) / (x * s * Math.sqrt(2 * Math.PI));
+    }
+    return 0;
+  }
+  function meanVar(kind) {
+    if (kind === 'normal') return { m: 0, v: 1 };
+    if (kind === 'uniform') return { m: 0, v: (4*4)/12 };
+    if (kind === 'exp') return { m: 1, v: 1 };
+    if (kind === 'skew') return { m: Math.exp(0 + 0.5*0.36), v: (Math.exp(0.36)-1)*Math.exp(0.72) };
+    return { m: 0, v: 1 };
+  }
+
+  function render() {
+    const kind = sel.value;
+    const xmin = kind === 'exp' || kind === 'skew' ? -0.2 : -4;
+    const xmax = kind === 'exp' ? 6 : kind === 'skew' ? 6 : 4;
+    const N = 300;
+    let maxY = 0;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const x = xmin + (xmax - xmin) * i / N;
+      const y = pdf(kind, x);
+      pts.push([x, y]);
+      if (y > maxY) maxY = y;
+    }
+    const X = x => pad + (x - xmin) / (xmax - xmin) * (W - 2*pad);
+    const Y = y => H - pad - (y / (maxY * 1.1)) * (H - 2*pad);
+    const path = pts.map((p, i) => (i === 0 ? 'M' : 'L') + X(p[0]) + ',' + Y(p[1])).join(' ');
+    const fill = `M${X(xmin)},${Y(0)} ` + pts.map(p => `L${X(p[0])},${Y(p[1])}`).join(' ') + ` L${X(xmax)},${Y(0)} Z`;
+
+    const mv = meanVar(kind);
+    svg.innerHTML = `
+      <path d="${fill}" fill="var(--accent-soft)" />
+      <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none" />
+      <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="var(--ink-3)" stroke-width="1" />
+      <line x1="${X(mv.m)}" y1="${pad}" x2="${X(mv.m)}" y2="${H-pad}" stroke="var(--ink)" stroke-dasharray="3,3" />
+      <text x="${X(mv.m)+4}" y="${pad+12}" font-size="11" fill="var(--ink-2)">mean = ${mv.m.toFixed(2)}</text>
+    `;
+    out.textContent = `mean ≈ ${mv.m.toFixed(2)}, variance ≈ ${mv.v.toFixed(2)}`;
+  }
+  sel.addEventListener('change', render);
+  render();
+})();
+
+// CLT viz
+(function() {
+  const svg = document.getElementById('cltSvg');
+  const slider = document.getElementById('cltN');
+  const out = document.getElementById('cltReadout');
+  if (!svg) return;
+  const W = 600, H = 240, pad = 30;
+
+  // Exponential parent (skewed) for drama
+  function sampleParent() { return -Math.log(1 - Math.random()); }
+
+  function simulate(n, trials=4000) {
+    const means = [];
+    for (let t = 0; t < trials; t++) {
+      let s = 0;
+      for (let i = 0; i < n; i++) s += sampleParent();
+      means.push(s / n);
+    }
+    return means;
+  }
+
+  function histogram(data, bins, min, max) {
+    const h = new Array(bins).fill(0);
+    const w = (max - min) / bins;
+    for (const v of data) {
+      let b = Math.floor((v - min) / w);
+      if (b < 0) b = 0;
+      if (b >= bins) b = bins - 1;
+      h[b]++;
+    }
+    return h;
+  }
+
+  function render() {
+    const n = parseInt(slider.value, 10);
+    const data = simulate(n);
+    const bins = 40;
+    const min = 0, max = 4;
+    const h = histogram(data, bins, min, max);
+    const maxH = Math.max(...h);
+    const bw = (W - 2*pad) / bins;
+    let bars = '';
+    for (let i = 0; i < bins; i++) {
+      const x = pad + i * bw;
+      const bh = (h[i] / maxH) * (H - 2*pad);
+      bars += `<rect x="${x}" y="${H-pad-bh}" width="${bw-1}" height="${bh}" fill="var(--accent)" opacity="0.75"></rect>`;
+    }
+    // Overlay normal approx if n>1
+    const mean = 1, sd = 1 / Math.sqrt(n);
+    let path = '';
+    const densMax = 1 / (sd * Math.sqrt(2 * Math.PI));
+    const binW = (max - min) / bins;
+    // scale normal density so its peak matches the bar height at its mode
+    const peakBar = maxH; // bar count at mode
+    // Convert density to expected count per bin: density * binW * trials
+    const trials = data.length;
+    for (let i = 0; i <= 200; i++) {
+      const xv = min + (max - min) * i / 200;
+      const dens = Math.exp(-0.5 * Math.pow((xv - mean)/sd, 2)) / (sd * Math.sqrt(2 * Math.PI));
+      const expected = dens * binW * trials;
+      const px = pad + (xv - min) / (max - min) * (W - 2*pad);
+      const py = H - pad - (expected / maxH) * (H - 2*pad);
+      path += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
+    }
+    svg.innerHTML = `
+      ${bars}
+      <path d="${path}" stroke="var(--ink)" stroke-width="2" fill="none" />
+      <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="var(--ink-3)" />
+      <text x="${W-pad-5}" y="${H-pad-4}" text-anchor="end" font-size="11" fill="var(--ink-3)">value of sample mean</text>
+    `;
+    out.textContent = `n = ${n}  (black curve = Gaussian prediction)`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

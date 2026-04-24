@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 3 · Linear Regression · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch02.html">← Ch 2</a>
+  <a href="ch04.html">Ch 4 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 3</span>
+  <h1 class="serif">Linear Regression</h1>
+  <p class="subtitle">The oldest, simplest, most over-deployed model in the world. Master this and you understand a surprising amount of ML.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Draw the best-fitting straight line (or hyperplane) through your points.</h3>
+    <p>"Best" = "minimizes the sum of squared vertical distances between the line and the points." That's it. Every insight in this chapter is a consequence of that one choice.</p>
+  </div>
+
+  <h2>1. Simple linear regression (one predictor)</h2>
+  <div class="concept">
+    <p>Assume $Y = \beta_0 + \beta_1 X + \epsilon$. Your job: estimate $\beta_0$ (intercept) and $\beta_1$ (slope) from data.</p>
+    <p>The method is <strong>least squares</strong>: pick $\hat{\beta}_0, \hat{\beta}_1$ to minimize</p>
+    <p>$$ \mathrm{RSS} = \sum_{i=1}^n (y_i - \hat{\beta}_0 - \hat{\beta}_1 x_i)^2 $$</p>
+    <p>RSS = <em>residual sum of squares</em>. A residual is a vertical distance from a point to the line. We square them (so negatives don't cancel and big misses are penalized more) and sum them up.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Intercept β₀: <input type="range" id="b0" min="-3" max="3" step="0.1" value="0" /></label>
+        <label>Slope β₁: <input type="range" id="b1" min="-2" max="2" step="0.05" value="0" /></label>
+        <button id="fitBtn" style="padding:6px 12px;border:1px solid var(--rule);background:var(--surface);border-radius:8px;cursor:pointer">Snap to least-squares fit</button>
+        <span class="readout" id="rssReadout"></span>
+      </div>
+      <svg id="lrSvg" viewBox="0 0 600 280" aria-label="Linear regression"></svg>
+      <p class="tagline">Drag the sliders. Watch RSS change. The "snap" button solves for the minimum in closed form.</p>
+    </div>
+
+    <details class="math"><summary>Closed-form coefficients</summary>
+      <p>$$ \hat{\beta}_1 = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2} \qquad \hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x} $$</p>
+      <p>Slope = covariance divided by variance of X. Intercept makes the line pass through $(\bar{x}, \bar{y})$.</p>
+    </details>
+  </div>
+
+  <h2>2. Reading the coefficients</h2>
+  <div class="concept">
+    <p>$\hat{\beta}_1 = 0.8$ means: "for every 1-unit increase in $X$, $Y$ is predicted to increase by 0.8 units, holding everything else constant." The word "predicted" is doing work — this is a fitted relationship, not a proven cause.</p>
+
+    <h3>Are the coefficients real?</h3>
+    <p>Each coefficient has a <strong>standard error</strong> (how much the estimate would bounce around under different samples). From SE we get:</p>
+    <ul>
+      <li><strong>Confidence interval</strong>: $\hat{\beta} \pm 2 \cdot SE(\hat{\beta})$ is an ~95% CI.</li>
+      <li><strong>t-statistic</strong>: $t = \hat{\beta} / SE(\hat{\beta})$. How many SEs is the estimate from zero?</li>
+      <li><strong>p-value</strong>: P(seeing a t this extreme | true $\beta = 0$). Small p = the slope is probably not zero.</li>
+    </ul>
+    <div class="callout warn">p &lt; 0.05 on a coefficient means "probably not zero," not "important" or "causal." Large datasets produce tiny p-values on economically meaningless effects. Always look at effect size too.</div>
+  </div>
+
+  <h2>3. Multiple linear regression</h2>
+  <div class="concept">
+    <p>$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \dots + \beta_p X_p + \epsilon$. Same idea, more predictors. Each $\hat{\beta}_j$ is the effect of $X_j$ <strong>after accounting for all other predictors in the model</strong>.</p>
+
+    <div class="analogy">In simple regression, you're checking if ice cream sales predict drownings. Strong relationship! In multiple regression, you add "temperature" as another predictor. Now ice cream's coefficient collapses. The effect you saw was really temperature, showing up through ice cream.</div>
+
+    <h3>The coefficient changes meaning</h3>
+    <p>A predictor's coefficient in simple regression is rarely its coefficient in multiple regression. Adding predictors can flip signs, kill significance, or reveal something new. This is why "correlation ≠ causation" becomes "conditional correlation ≠ causation" in ML.</p>
+
+    <h3>Testing whether ANY predictor matters: the F-test</h3>
+    <p>The F-statistic tests the joint hypothesis that <em>all</em> coefficients (other than intercept) are zero. If F is large (and p small), at least one predictor matters. It's a gatekeeper — you run it first before trusting individual t-tests.</p>
+  </div>
+
+  <h2>4. Qualitative predictors (dummy variables)</h2>
+  <div class="concept">
+    <p>Linear regression only speaks numbers. For a category like "region = {North, South, East, West}," you create <em>dummy variables</em>: 0/1 columns for each category (minus one, to avoid redundancy). The coefficients become "how much does South differ from the reference category, North?"</p>
+    <div class="callout">The dropped category is the <strong>reference</strong> — all other coefficients are relative to it. If you drop "North," the intercept is the North average, and "South coefficient" = South - North.</div>
+  </div>
+
+  <h2>5. Interactions & non-linearity, lightly</h2>
+  <div class="concept">
+    <p>Standard linear regression assumes effects are <strong>additive</strong> (each predictor's contribution is independent of the others) and <strong>linear</strong> (a straight-line relationship).</p>
+    <ul>
+      <li><strong>Interaction terms</strong> (<code>X1 * X2</code>): let the effect of X1 depend on the value of X2. "TV ads help, but only if you also advertise on radio."</li>
+      <li><strong>Polynomial terms</strong> (<code>X²</code>, <code>X³</code>): let the relationship curve. Still "linear" in the model's eyes because the coefficients multiply fixed transformations of X.</li>
+    </ul>
+    <p>These give you a lot of mileage before you need fancier methods (Ch 7).</p>
+  </div>
+
+  <h2>6. Diagnostics: when linear regression lies</h2>
+  <div class="concept">
+    <p>Linear regression makes assumptions. Violating them doesn't crash the model — it just makes the output misleading. Always check:</p>
+    <table>
+      <thead><tr><th>Problem</th><th>How to spot</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Non-linearity</strong></td><td>Residuals vs fitted values show a curve</td><td>Add polynomial/interaction terms; try splines (Ch 7)</td></tr>
+        <tr><td><strong>Heteroscedasticity</strong> (non-constant variance)</td><td>Residual spread fans out or funnels in</td><td>Log/sqrt transform y; use weighted least squares</td></tr>
+        <tr><td><strong>Correlated errors</strong></td><td>Residuals show temporal pattern (time series)</td><td>Time-series methods; add lagged variables</td></tr>
+        <tr><td><strong>Outliers</strong></td><td>Standardized residuals &gt; 3 in magnitude</td><td>Investigate (data entry? real?). Don't just delete.</td></tr>
+        <tr><td><strong>High-leverage points</strong></td><td>Unusual $x_i$, not $y_i$. Single point can control the line.</td><td>Check leverage statistic. Possibly robust regression.</td></tr>
+        <tr><td><strong>Collinearity</strong></td><td>Two predictors are highly correlated → coefficients unstable</td><td>Check VIF. Drop one, combine them, or use ridge (Ch 6).</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">If your variables have huge VIFs (&gt;10), your individual coefficient estimates are unstable even if the overall model predicts fine. You can still predict, but don't trust the "which predictor matters" story.</div>
+  </div>
+
+  <h2>7. R²: the model's self-graded report card</h2>
+  <div class="concept">
+    <p>$R^2 = 1 - \frac{RSS}{TSS}$ where TSS is total sum of squares (how much Y varies overall). $R^2 = 0.7$ means "my model explains 70% of the variation in Y."</p>
+    <div class="callout warn">$R^2$ always goes up when you add predictors, even garbage ones. Use <strong>adjusted R²</strong> for fair comparison across models, or better, use cross-validation (Ch 5).</div>
+  </div>
+
+  <h2>8. Linear regression vs KNN</h2>
+  <div class="concept">
+    <p>KNN (Ch 2) is flexible and makes no form assumption. Linear regression is rigid and assumes a straight line. When is each better?</p>
+    <ul>
+      <li><strong>True relationship is roughly linear</strong> → linear regression wins. Fewer parameters, lower variance.</li>
+      <li><strong>Strongly non-linear truth + lots of data + low dimension</strong> → KNN wins.</li>
+      <li><strong>High dimensions</strong> (p large) → linear regression wins, because KNN's curse-of-dimensionality is brutal.</li>
+    </ul>
+    <p>Takeaway: "simpler" wins more often than you'd expect, especially in high dimensions.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Define least squares.</strong></div>
+      <div class="fc-back">The method of estimating coefficients by minimizing the sum of squared residuals (vertical distances from points to the line).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What does β₁ = 0.8 mean in multiple regression?</strong></div>
+      <div class="fc-back">A 1-unit increase in X₁ is associated with a 0.8-unit predicted increase in Y, holding all other predictors constant. The "holding constant" part is crucial.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What does the F-test check?</strong></div>
+      <div class="fc-back">The joint null that ALL coefficients (except intercept) are zero. Small p = at least one predictor is useful. Run before trusting individual t-tests.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What does the standard error of a coefficient measure?</strong></div>
+      <div class="fc-back">How much the estimated coefficient would bounce around across different samples. Small SE = stable estimate. CI ≈ β̂ ± 2·SE.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Why does adding a predictor sometimes flip another's sign?</strong></div>
+      <div class="fc-back">Because a coefficient means "effect AFTER accounting for other predictors." A new variable can absorb the effect that was previously being attributed to the old one (confounding).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>What is a dummy variable?</strong></div>
+      <div class="fc-back">A 0/1 column representing a category. For k categories, you create k−1 dummies (the dropped one is the reference). Coefficients are "difference from the reference."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>What is an interaction term?</strong></div>
+      <div class="fc-back">A term like X₁·X₂ that lets the effect of X₁ depend on X₂. "The slope changes depending on the other variable."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>Name three linear regression assumption violations.</strong></div>
+      <div class="fc-back">Non-linearity, heteroscedasticity (non-constant error variance), correlated errors, outliers, high leverage, collinearity.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Why is R² misleading for model comparison?</strong></div>
+      <div class="fc-back">It only goes up (or stays flat) when you add predictors — even useless ones. Use adjusted R² or cross-validated test error.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>Linear regression vs KNN — when does each win?</strong></div>
+      <div class="fc-back">Linear wins when truth is ~linear, data is limited, or p is large. KNN wins when truth is nonlinear and you have lots of data in low dimensions.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">11</span>
+      <div class="fc-front"><strong>What does collinearity break?</strong></div>
+      <div class="fc-back">Coefficient estimates — they become unstable (huge SEs) because the model can't separate which correlated predictor is doing the work. Predictions still OK.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">Your regression output says ad spend has β̂ = 2.3, SE = 0.1, p &lt; 0.001, and R² = 0.02. Is ad spend "important"?</div>
+  <div class="prompt">You add "is_weekend" to a model and the coefficient on "day_of_month" reverses. What's going on?</div>
+  <div class="prompt">Your residuals vs fitted plot shows a smile (curve upward on both ends). Which assumption is broken and what do you try?</div>
+
+  <div class="chapter-nav">
+    <a href="ch02.html">← Ch 2</a>
+    <a href="ch04.html">Ch 4 · Classification →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('lrSvg');
+  const sB0 = document.getElementById('b0');
+  const sB1 = document.getElementById('b1');
+  const btn = document.getElementById('fitBtn');
+  const out = document.getElementById('rssReadout');
+  if (!svg) return;
+  const W = 600, H = 280, pad = 34;
+
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(11);
+  const data = [];
+  const trueB0 = 0.5, trueB1 = 1.3;
+  for (let i = 0; i < 30; i++) {
+    const x = -2 + 4 * rng();
+    const y = trueB0 + trueB1 * x + (rng() - 0.5) * 2;
+    data.push({ x, y });
+  }
+  const xmin = -2.5, xmax = 2.5, ymin = -4, ymax = 4;
+  const X = x => pad + (x - xmin) / (xmax - xmin) * (W - 2 * pad);
+  const Y = y => H - pad - (y - ymin) / (ymax - ymin) * (H - 2 * pad);
+
+  function render() {
+    const b0 = parseFloat(sB0.value);
+    const b1 = parseFloat(sB1.value);
+    let rss = 0;
+    let lines = '';
+    let pts = '';
+    for (const d of data) {
+      const yhat = b0 + b1 * d.x;
+      const r = d.y - yhat;
+      rss += r * r;
+      lines += `<line x1="${X(d.x)}" y1="${Y(d.y)}" x2="${X(d.x)}" y2="${Y(yhat)}" stroke="var(--danger)" stroke-width="1" opacity="0.55"/>`;
+      pts += `<circle cx="${X(d.x)}" cy="${Y(d.y)}" r="3" fill="var(--accent)"/>`;
+    }
+    const path = `M${X(xmin)},${Y(b0 + b1 * xmin)} L${X(xmax)},${Y(b0 + b1 * xmax)}`;
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${Y(0)}" x2="${W - pad}" y2="${Y(0)}" stroke="var(--ink-3)" stroke-width="0.5"/>
+      <line x1="${X(0)}" y1="${pad}" x2="${X(0)}" y2="${H - pad}" stroke="var(--ink-3)" stroke-width="0.5"/>
+      ${lines}
+      <path d="${path}" stroke="var(--accent)" stroke-width="2.5"/>
+      ${pts}
+    `;
+    out.textContent = `β₀ = ${b0.toFixed(2)}, β₁ = ${b1.toFixed(2)}, RSS = ${rss.toFixed(2)}`;
+  }
+  sB0.addEventListener('input', render);
+  sB1.addEventListener('input', render);
+  btn.addEventListener('click', () => {
+    const xbar = data.reduce((s, d) => s + d.x, 0) / data.length;
+    const ybar = data.reduce((s, d) => s + d.y, 0) / data.length;
+    let num = 0, den = 0;
+    for (const d of data) { num += (d.x - xbar) * (d.y - ybar); den += (d.x - xbar) ** 2; }
+    const b1 = num / den;
+    const b0 = ybar - b1 * xbar;
+    sB0.value = b0.toFixed(2);
+    sB1.value = b1.toFixed(2);
+    render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

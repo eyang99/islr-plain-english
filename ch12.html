@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 12 · Unsupervised Learning · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch11.html">← Ch 11</a>
+  <a href="ch13.html">Ch 13 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 12</span>
+  <h1 class="serif">Unsupervised Learning</h1>
+  <p class="subtitle">No labels. No "right answer." You're trying to find structure — clusters, directions, associations — without being told what the structure should look like.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Supervised learning has a ground truth to score against. Unsupervised learning doesn't — so evaluation becomes an argument, not a number.</h3>
+    <p>PCA compresses many correlated features into a few uncorrelated ones. Clustering groups similar observations together. Both are exploratory by nature — you use them to see, not to predict.</p>
+  </div>
+
+  <h2>1. Principal Component Analysis (PCA)</h2>
+  <div class="concept">
+    <p>You have $p$ correlated features. PCA finds a new set of $p$ axes — <em>principal components</em> — that are uncorrelated with each other, ordered so the first captures the most variance, the second the most remaining variance, and so on.</p>
+
+    <div class="analogy">Imagine a cloud of 3D points that's actually squished into a near-2D pancake. PCA rotates your coordinate system so the first axis lies along the pancake's longest direction, the second along its second-longest, and the third points through the thin part (which you can mostly ignore). You haven't lost information — you've just found the natural axes.</div>
+
+    <h3>The steps</h3>
+    <ol>
+      <li><strong>Standardize</strong> each feature (mean 0, variance 1). Required unless all features are on the same scale.</li>
+      <li>Compute the covariance matrix of the standardized features.</li>
+      <li>Find its eigenvectors (the new axes) and eigenvalues (how much variance each axis captures).</li>
+      <li>Order by eigenvalue. The first k eigenvectors are your principal components.</li>
+    </ol>
+
+    <h3>How many components to keep?</h3>
+    <p>Plot the <strong>scree plot</strong>: eigenvalue vs component number. Look for the "elbow." Or pick enough to explain, say, 90% of variance. Or use cross-validation if you have a downstream supervised task (Ch 6's PCR).</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Rotation angle (°): <input type="range" id="pcaAng" min="0" max="180" value="60"/></label>
+        <span class="readout" id="pcaReadout"></span>
+      </div>
+      <svg id="pcaSvg" viewBox="0 0 600 300" aria-label="PCA demo"></svg>
+      <p class="tagline">Drag the angle to rotate. PC1 is chosen to maximize the variance of the projection (orange tick marks). The optimal PC1 points along the data's longest axis.</p>
+    </div>
+
+    <h3>What PCA is not</h3>
+    <ul>
+      <li>Not variable selection — every component uses all original variables.</li>
+      <li>Not always interpretable. PC1 might be "a little of everything" with no obvious meaning.</li>
+      <li>Not guaranteed to help supervised tasks. High-variance directions ≠ predictive directions (the PCR warning from Ch 6).</li>
+    </ul>
+  </div>
+
+  <h2>2. Missing values via matrix completion</h2>
+  <div class="concept">
+    <p>A creative use of PCA. If your data matrix has missing entries (a classic example: user-movie ratings, mostly blank), you can assume the true matrix has low rank (i.e., describable by a few principal components). Fill in the missing values consistent with that low-rank structure.</p>
+    <p>Iterative algorithm: guess missing values → run PCA → reconstruct matrix from top components → update missing values → repeat. Converges to an imputation. Netflix-style recommender systems are variations on this.</p>
+  </div>
+
+  <h2>3. K-means clustering</h2>
+  <div class="concept">
+    <p>Pre-commit to $K$ clusters. Find $K$ cluster centers and assign each point to the nearest one, so that <em>within-cluster distances are minimized</em>.</p>
+
+    <h3>The algorithm (Lloyd's)</h3>
+    <ol>
+      <li>Randomly initialize $K$ centers.</li>
+      <li>Assign each point to the nearest center.</li>
+      <li>Recompute each center as the mean of its assigned points.</li>
+      <li>Repeat 2–3 until assignments stop changing.</li>
+    </ol>
+    <p>Converges to a local minimum of within-cluster variance. Different starts can give different answers — run it many times and keep the best.</p>
+
+    <h3>Picking K</h3>
+    <p>K-means will find K clusters whether or not K clusters actually exist. Use:</p>
+    <ul>
+      <li><strong>Elbow method</strong>: plot within-cluster SS vs K; look for the bend.</li>
+      <li><strong>Silhouette score</strong>: measures how similar points are to their own cluster vs other clusters. Higher is better.</li>
+      <li><strong>Gap statistic</strong>: compare your WCSS to what you'd get from uniform random data.</li>
+    </ul>
+
+    <div class="callout warn">K-means assumes spherical, similarly-sized clusters. It fails on elongated clusters, nested clusters, or clusters of very different sizes. Run it and <em>look</em>. Don't trust the label output blindly.</div>
+  </div>
+
+  <h2>4. Hierarchical clustering</h2>
+  <div class="concept">
+    <p>Instead of pre-committing to $K$, build a tree (dendrogram) where the leaves are observations and each internal node merges the most similar pair. You can cut the tree at any level to get any number of clusters.</p>
+
+    <h3>Linkage methods</h3>
+    <p>To merge clusters, you need a definition of "distance between clusters":</p>
+    <ul>
+      <li><strong>Complete linkage</strong>: max distance between any pair of points in the two clusters. Compact clusters.</li>
+      <li><strong>Single linkage</strong>: min distance. Prone to "chaining" — long stringy clusters.</li>
+      <li><strong>Average linkage</strong>: mean pairwise distance. Often a reasonable default.</li>
+      <li><strong>Ward linkage</strong>: merges minimize within-cluster variance increase. Spherical, balanced clusters.</li>
+    </ul>
+
+    <div class="callout">Different linkage methods can give completely different dendrograms from the same data. There's no "true" answer — you're picking an assumption. Ward and average are solid defaults.</div>
+  </div>
+
+  <h2>5. K-means vs hierarchical</h2>
+  <div class="concept">
+    <table>
+      <thead><tr><th></th><th>K-means</th><th>Hierarchical</th></tr></thead>
+      <tbody>
+        <tr><td>Pick K first?</td><td>Yes</td><td>No (cut the tree later)</td></tr>
+        <tr><td>Scales to large n</td><td>Yes</td><td>Slow (O(n²) or worse)</td></tr>
+        <tr><td>Cluster shapes</td><td>Spherical</td><td>Depends on linkage</td></tr>
+        <tr><td>Reproducibility</td><td>Random init; can vary</td><td>Deterministic given method</td></tr>
+        <tr><td>Output</td><td>Flat partition</td><td>Tree — can inspect at any level</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>6. Practical cautions</h2>
+  <div class="concept">
+    <ul>
+      <li><strong>Scale your features</strong>. Clustering is distance-based. A variable in thousands will dominate a variable in fractions.</li>
+      <li><strong>Try multiple random starts</strong> for K-means.</li>
+      <li><strong>Don't over-interpret cluster labels</strong>. The algorithm doesn't know what the clusters <em>mean</em>. You have to interpret them.</li>
+      <li><strong>Clusters can be artifacts</strong>. Clustering will produce clusters regardless of whether they exist in a meaningful sense. Always validate on held-out data or downstream use.</li>
+      <li><strong>High dimensions hurt</strong>. Distance loses meaning in high dimensions — consider PCA or feature selection first.</li>
+    </ul>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>What does PCA do in one sentence?</strong></div>
+      <div class="fc-back">Rotates the coordinate system so new axes (principal components) are uncorrelated and ordered by how much variance they capture.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Why standardize before PCA?</strong></div>
+      <div class="fc-back">Variance is scale-dependent. A variable in thousands dominates one in fractions. Standardizing to mean 0, SD 1 makes the components reflect structure, not units.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>How do you pick the number of components?</strong></div>
+      <div class="fc-back">Scree plot (look for elbow), cumulative variance threshold (e.g., 90%), or cross-validation if there's a downstream task.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>Describe K-means in four steps.</strong></div>
+      <div class="fc-back">1) Pick K random centers. 2) Assign each point to the nearest center. 3) Recompute each center as the mean of its points. 4) Repeat 2-3 until stable.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What shapes does K-means assume?</strong></div>
+      <div class="fc-back">Roughly spherical, similarly-sized clusters. It fails on elongated, nested, or very unbalanced clusters.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>What is a dendrogram?</strong></div>
+      <div class="fc-back">A tree showing the hierarchical merging of observations into clusters. Cut it horizontally at any level to choose a number of clusters.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Name two linkage methods and one of each's quirks.</strong></div>
+      <div class="fc-back">Single linkage (min distance) — chains long stringy clusters. Complete (max distance) — compact clusters. Average — reasonable default. Ward — balanced, spherical.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>Can clustering find clusters that aren't there?</strong></div>
+      <div class="fc-back">Yes. Every clustering algorithm returns clusters regardless of whether they meaningfully exist. Validate against held-out data, domain knowledge, or downstream use.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>K-means vs hierarchical — when pick which?</strong></div>
+      <div class="fc-back">K-means: large n, you've decided on K, spherical clusters expected. Hierarchical: smaller n, you want to explore different cluster counts, non-spherical shapes.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>Why is high variance not the same as high predictive value?</strong></div>
+      <div class="fc-back">PCA finds directions of greatest X-variance. Nothing guarantees those directions relate to Y. PCR can miss the predictive signal if it lives in a low-variance direction of X.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">A marketing team runs K-means with K=5 and proudly labels the clusters "high-value champions," "at-risk," etc. What should you ask before trusting the labels?</div>
+  <div class="prompt">Your PCA scree plot shows a smooth curve with no clear elbow. What does that tell you about the structure of your data?</div>
+
+  <div class="chapter-nav">
+    <a href="ch11.html">← Ch 11</a>
+    <a href="ch13.html">Ch 13 · Multiple Testing →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('pcaSvg');
+  const slider = document.getElementById('pcaAng');
+  const out = document.getElementById('pcaReadout');
+  if (!svg) return;
+  const W = 600, H = 300, pad = 30;
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(17);
+  function gauss() { return Math.sqrt(-2 * Math.log(rng())) * Math.cos(2 * Math.PI * rng()); }
+  // Generate correlated data rotated ~60°
+  const pts = [];
+  const trueAng = 60 * Math.PI / 180;
+  for (let i = 0; i < 150; i++) {
+    const u = 2 * gauss();
+    const v = 0.4 * gauss();
+    const x = u * Math.cos(trueAng) - v * Math.sin(trueAng);
+    const y = u * Math.sin(trueAng) + v * Math.cos(trueAng);
+    pts.push([x, y]);
+  }
+  // Optimal angle (PC1 direction) — compute via covariance eigen-decomposition
+  let sxx = 0, sxy = 0, syy = 0;
+  for (const [x, y] of pts) { sxx += x*x; sxy += x*y; syy += y*y; }
+  sxx /= pts.length; sxy /= pts.length; syy /= pts.length;
+  const optAng = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+
+  function render() {
+    const ang = parseFloat(slider.value) * Math.PI / 180;
+    const cx = W / 2, cy = H / 2, sc = 50;
+    const X = x => cx + x * sc;
+    const Y = y => cy - y * sc;
+    // Projection variance
+    const u = [Math.cos(ang), Math.sin(ang)];
+    const projs = pts.map(p => p[0]*u[0] + p[1]*u[1]);
+    const mean = projs.reduce((s,v)=>s+v,0)/projs.length;
+    const variance = projs.reduce((s,v)=>s+(v-mean)**2,0)/projs.length;
+    // Draw points
+    let dots = '';
+    for (const [x, y] of pts) dots += `<circle cx="${X(x)}" cy="${Y(y)}" r="2.5" fill="var(--accent)" opacity="0.6"/>`;
+    // Draw the axis direction
+    const axL = 3;
+    const ax = `<line x1="${X(-axL*u[0])}" y1="${Y(-axL*u[1])}" x2="${X(axL*u[0])}" y2="${Y(axL*u[1])}" stroke="var(--ink)" stroke-width="2"/>`;
+    // Projected points as tick marks
+    let proj = '';
+    for (let i = 0; i < pts.length; i++) {
+      const p = projs[i];
+      const px = p * u[0], py = p * u[1];
+      proj += `<circle cx="${X(px)}" cy="${Y(py)}" r="2" fill="var(--warn)"/>`;
+    }
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${cy}" x2="${W-pad}" y2="${cy}" stroke="var(--ink-3)" opacity="0.3"/>
+      <line x1="${cx}" y1="${pad}" x2="${cx}" y2="${H-pad}" stroke="var(--ink-3)" opacity="0.3"/>
+      ${dots}
+      ${ax}
+      ${proj}
+    `;
+    const optDeg = (optAng * 180 / Math.PI + 360) % 180;
+    out.textContent = `angle = ${parseFloat(slider.value).toFixed(0)}°  ·  projected variance = ${variance.toFixed(2)}  ·  optimal (PC1) ≈ ${optDeg.toFixed(0)}°`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

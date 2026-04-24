@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 2 · Statistical Learning · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch01.html">← Ch 1</a>
+  <a href="ch03.html">Ch 3 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 2 · the most important chapter</span>
+  <h1 class="serif">Statistical Learning</h1>
+  <p class="subtitle">If you understand this chapter, the rest of the book is mostly variations. Bias-variance, training vs test error, KNN. Read this one twice.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Every model's total error splits into three pieces. Two you can fight. One you can't.</h3>
+    <p><strong>Bias</strong> (too simple to see the truth) + <strong>Variance</strong> (so flexible it chases noise) + <strong>Irreducible noise</strong> (the universe's coin flips you'll never predict). The whole game of ML is juggling bias against variance. The noise stays.</p>
+  </div>
+
+  <h2>1. What we're actually trying to estimate</h2>
+  <div class="concept">
+    <p>We assume there's a true function $f$ linking inputs to outputs, plus some noise:</p>
+    <p>$$ Y = f(X) + \epsilon $$</p>
+    <p>We don't know $f$. We have a dataset $(x_i, y_i)$ for $i = 1, \dots, n$, and we want to build $\hat{f}$ to approximate $f$.</p>
+
+    <h3>Reducible vs irreducible error</h3>
+    <p>Total error when we predict $\hat{Y} = \hat{f}(X)$:</p>
+    <p>$$ E[(Y - \hat{Y})^2] = \underbrace{(f(X) - \hat{f}(X))^2}_{\text{reducible}} + \underbrace{\mathrm{Var}(\epsilon)}_{\text{irreducible}} $$</p>
+    <p>A better model shrinks the reducible part. Nothing shrinks the irreducible part. Any paper claiming zero test error is either lying, overfit, or living in a freakishly noise-free world.</p>
+    <div class="analogy">The irreducible error is the <strong>wind</strong>. No matter how perfect your aim, the dart moves on the way. The reducible error is your <strong>aim</strong>. You can get better at aim. You can't make the wind go away.</div>
+  </div>
+
+  <h2>2. Parametric vs non-parametric methods</h2>
+  <div class="concept">
+    <div class="two-col">
+      <div>
+        <h3>Parametric</h3>
+        <p>Assume a functional form for $f$ (e.g., linear: $f(X) = \beta_0 + \beta_1 X_1 + \dots$). Then the problem reduces to estimating a few numbers (the $\beta$s). Fast, interpretable, can be very wrong if the form is wrong.</p>
+        <div class="analogy">You walk into a tailor and say "I want a suit." The tailor says "I only make rectangles." Cheap, fast, but if your shape isn't a rectangle, tough luck.</div>
+      </div>
+      <div>
+        <h3>Non-parametric</h3>
+        <p>Make no strong assumption about the form of $f$. Let the data shape the model (e.g., KNN, trees). Much more flexible, needs more data, harder to interpret.</p>
+        <div class="analogy">A bespoke tailor traces your body. Fits beautifully, but they need to see a lot of you to get it right, and they can't describe the pattern in two sentences.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>3. Training error vs test error</h2>
+  <div class="concept">
+    <h3>The distinction that breaks beginners</h3>
+    <p><strong>Training error</strong>: how well you fit the data you've already seen. <strong>Test error</strong>: how well you'd predict <em>new</em> data you haven't seen. Only the second one matters.</p>
+    <p>A model with zero training error can be a disaster on test data. "Memorize every training answer" is a strategy that hits zero training error and fails completely in the real world. That's overfitting.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Model flexibility: <input type="range" id="flexSlider" min="1" max="15" value="3" /></label>
+        <span class="readout" id="flexReadout">flexibility = 3</span>
+      </div>
+      <svg id="flexSvg" viewBox="0 0 600 240" aria-label="Flexibility vs error"></svg>
+      <p class="tagline">Left: the model fit. Right: training vs test error as flexibility grows. Watch test error bottom out then climb.</p>
+    </div>
+  </div>
+
+  <h2>4. The bias-variance decomposition</h2>
+  <div class="concept">
+    <p>The expected test MSE at a point $x_0$ decomposes:</p>
+    <p>$$ E[(y_0 - \hat{f}(x_0))^2] = \underbrace{\mathrm{Var}(\hat{f}(x_0))}_{\text{variance}} + \underbrace{[\mathrm{Bias}(\hat{f}(x_0))]^2}_{\text{bias}^2} + \mathrm{Var}(\epsilon) $$</p>
+
+    <h3>What bias and variance actually mean</h3>
+    <ul>
+      <li><strong>Bias</strong>: if I re-trained on many different samples, what's the average error from the truth? High bias = the model is <em>systematically wrong</em> because its assumed form is too simple.</li>
+      <li><strong>Variance</strong>: how much would the model change if I trained it on a different sample of the same size? High variance = the model is <em>jumpy</em> — sensitive to which points it happened to see.</li>
+    </ul>
+
+    <div class="analogy">
+      Bias = <strong>you always hit the wrong spot</strong> on the dartboard, even though your throws are tight. Your aim is calibrated wrong.<br/>
+      Variance = <strong>your throws are scattered all over</strong>, sometimes hitting bullseye by luck. Your aim is unstable.
+    </div>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Model complexity: <input type="range" id="bvSlider" min="1" max="20" value="5" /></label>
+        <span class="readout" id="bvReadout">complexity = 5</span>
+      </div>
+      <svg id="bvSvg" viewBox="0 0 600 240" aria-label="Bias-variance decomposition"></svg>
+      <p class="tagline">Bias² (orange) falls with complexity. Variance (blue) rises. Total test error (black) is a U-shape. The minimum is the sweet spot.</p>
+    </div>
+  </div>
+
+  <h2>5. K-Nearest Neighbors — your first model</h2>
+  <div class="concept">
+    <p>The dumbest model that works. To predict at a new point $x_0$:</p>
+    <ol>
+      <li>Find the $K$ training points closest to $x_0$.</li>
+      <li>Average their $y$ values (regression) or take the majority vote (classification).</li>
+      <li>That's your prediction.</li>
+    </ol>
+    <p>No training phase. The "model" is the dataset itself. The only knob is $K$.</p>
+
+    <h3>The K knob is a bias-variance knob</h3>
+    <ul>
+      <li><strong>Small K (K=1)</strong>: every prediction copies the nearest training point. Super flexible. <em>Low bias, high variance.</em> The decision boundary is jagged and changes wildly if one training point moves.</li>
+      <li><strong>Large K</strong>: average over many neighbors. Smoother, more stable. <em>Higher bias, lower variance.</em> In the extreme (K=n), you predict the global average every time.</li>
+    </ul>
+
+    <div class="viz">
+      <div class="controls">
+        <label>K (neighbors): <input type="range" id="knnK" min="1" max="40" value="5" /></label>
+        <span class="readout" id="knnReadout">K = 5</span>
+      </div>
+      <svg id="knnSvg" viewBox="0 0 600 300" aria-label="KNN classifier boundary"></svg>
+      <p class="tagline">Two-class KNN. Small K → wiggly boundary (overfit). Large K → smooth boundary (risk of underfit).</p>
+    </div>
+
+    <details class="math"><summary>KNN regression formula</summary>
+      <p>$$ \hat{f}(x_0) = \frac{1}{K} \sum_{x_i \in N_K(x_0)} y_i $$</p>
+      <p>where $N_K(x_0)$ is the set of the $K$ training points nearest to $x_0$ (usually by Euclidean distance).</p>
+    </details>
+  </div>
+
+  <h2>6. Classification: the 0/1 loss and Bayes classifier</h2>
+  <div class="concept">
+    <p>For classification, accuracy is measured with the <strong>error rate</strong> — the fraction of predictions you get wrong.</p>
+    <p>The theoretically best-possible classifier is the <strong>Bayes classifier</strong>: at each $x$, predict the most probable class given $x$. Its error rate is the <strong>Bayes error rate</strong> — the classification equivalent of irreducible error.</p>
+    <p>You can't compute the Bayes classifier in real life (you don't know the conditional probabilities). But it exists in theory, and every method is judged by how close it gets.</p>
+  </div>
+
+  <h2>7. The curse of dimensionality</h2>
+  <div class="concept">
+    <p>Methods like KNN die in high dimensions. Why? In high dimensions, every point is far from every other point — "nearest" loses meaning. The number of data points you need to cover a space grows exponentially with the number of features.</p>
+    <div class="analogy">In 1D, filling a line with points is cheap. In 2D, you need a grid — much more. In 100D, the universe's worth of data wouldn't fill it. So "closest neighbor" in 100D is basically random.</div>
+    <div class="callout">This is why Ch 6 (regularization) and Ch 10 (deep learning) exist. You either throw features away, or you use methods that don't care about distance the way KNN does.</div>
+  </div>
+
+  <div class="card big-idea">
+    <h3 style="margin-top:0">The single mental model for this chapter</h3>
+    <p>Every supervised model sits somewhere on a knob between "too rigid" and "too flexible." The ideal spot — the bottom of the U-shaped test error curve — depends on how much data you have, how noisy it is, and how complex the truth really is. The rest of the book is a catalog of models, each with their own knob, each with their own trade-off.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Decompose expected test MSE at a point.</strong></div>
+      <div class="fc-back">Bias² + Variance + Irreducible noise. Reducible = first two. Noise is the floor you can never go below.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What is bias in ML?</strong></div>
+      <div class="fc-back">The error from a model's structural assumptions being too simple or wrong. High bias = systematically off, even with infinite data.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What is variance in ML?</strong></div>
+      <div class="fc-back">How much the fitted model changes if you re-train on a different sample of the same size. High variance = jumpy model, overfit.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>Why is training error misleading?</strong></div>
+      <div class="fc-back">A flexible enough model can memorize the training set (zero training error) while generalizing terribly. Only test error tells you if the model learned the signal.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Parametric vs non-parametric — short version.</strong></div>
+      <div class="fc-back">Parametric: assume a form (like a line), estimate parameters. Fast, interpretable, can be badly wrong. Non-parametric: let the data shape the fit. Flexible, data-hungry, harder to interpret.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Describe KNN in four lines.</strong></div>
+      <div class="fc-back">1) To predict at x₀, 2) find the K training points closest to x₀, 3) average their labels (or vote), 4) return that. No training phase. K is the only knob.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>How does K in KNN move the bias-variance knob?</strong></div>
+      <div class="fc-back">Small K = low bias, high variance (wiggly, overfit). Large K = high bias, low variance (smooth, may underfit). K=n predicts the global average.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>What is the Bayes classifier?</strong></div>
+      <div class="fc-back">The theoretically optimal classifier: at each x, predict the class with the highest conditional probability. Its error rate (Bayes error) is the classification floor.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>State the curse of dimensionality.</strong></div>
+      <div class="fc-back">As dimensions grow, data points all become roughly equidistant. Distance-based methods like KNN break down because "nearest neighbor" stops being meaningful.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>Why does test MSE often form a U-shape vs model flexibility?</strong></div>
+      <div class="fc-back">Flexibility reduces bias (model fits truth better) but raises variance (more sensitive to the specific training sample). The sum is U-shaped; the minimum is the sweet spot.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You train a model. Training error = 0.01. Test error = 0.42. In one sentence, what happened and what do you do next?</div>
+  <div class="prompt">You're tuning K in KNN. Training error keeps falling as K decreases. Why shouldn't you just pick K=1?</div>
+  <div class="prompt">Your boss says "our new deep learning model got zero error on the test set!" What do you ask?</div>
+
+  <div class="chapter-nav">
+    <a href="ch01.html">← Ch 1</a>
+    <a href="ch03.html">Ch 3 · Linear Regression →</a>
+  </div>
+</main>
+
+<script>
+// Flexibility viz: left panel shows polynomial fit to sinusoid, right panel shows train/test curves
+(function() {
+  const svg = document.getElementById('flexSvg');
+  const slider = document.getElementById('flexSlider');
+  const out = document.getElementById('flexReadout');
+  if (!svg) return;
+  const W = 600, H = 240;
+
+  // Generate fixed data
+  const rng = mulberry32(42);
+  const xs = [], ysTrain = [];
+  for (let i = 0; i < 25; i++) {
+    const x = i / 24;
+    xs.push(x);
+    ysTrain.push(Math.sin(2 * Math.PI * x) + (rng() - 0.5) * 0.6);
+  }
+  const xsTest = [], ysTest = [];
+  for (let i = 0; i < 40; i++) {
+    const x = rng();
+    xsTest.push(x);
+    ysTest.push(Math.sin(2 * Math.PI * x) + (rng() - 0.5) * 0.6);
+  }
+
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // Fit polynomial of degree d via normal equations
+  function polyFit(xs, ys, d) {
+    const n = xs.length;
+    const X = [];
+    for (let i = 0; i < n; i++) {
+      const row = [];
+      for (let j = 0; j <= d; j++) row.push(Math.pow(xs[i], j));
+      X.push(row);
+    }
+    // Solve (X^T X) b = X^T y using Gauss-Jordan
+    const XtX = [], Xty = [];
+    for (let i = 0; i <= d; i++) {
+      XtX.push(new Array(d + 1).fill(0));
+      Xty.push(0);
+      for (let j = 0; j <= d; j++) {
+        for (let k = 0; k < n; k++) XtX[i][j] += X[k][i] * X[k][j];
+      }
+      for (let k = 0; k < n; k++) Xty[i] += X[k][i] * ys[k];
+    }
+    // Add tiny ridge for stability
+    for (let i = 0; i <= d; i++) XtX[i][i] += 1e-8;
+    // Solve
+    for (let i = 0; i <= d; i++) {
+      let piv = XtX[i][i];
+      for (let j = i; j <= d; j++) XtX[i][j] /= piv;
+      Xty[i] /= piv;
+      for (let k = 0; k <= d; k++) {
+        if (k === i) continue;
+        const f = XtX[k][i];
+        for (let j = i; j <= d; j++) XtX[k][j] -= f * XtX[i][j];
+        Xty[k] -= f * Xty[i];
+      }
+    }
+    return Xty;
+  }
+  function polyEval(b, x) {
+    let y = 0;
+    for (let i = 0; i < b.length; i++) y += b[i] * Math.pow(x, i);
+    return y;
+  }
+  function mse(ys, yhat) {
+    let s = 0;
+    for (let i = 0; i < ys.length; i++) s += (ys[i] - yhat[i]) ** 2;
+    return s / ys.length;
+  }
+
+  function render() {
+    const d = parseInt(slider.value, 10);
+    const b = polyFit(xs, ysTrain, d);
+    const trainHat = xs.map(x => polyEval(b, x));
+    const testHat = xsTest.map(x => polyEval(b, x));
+    const trainErr = mse(ysTrain, trainHat);
+    const testErr = mse(ysTest, testHat);
+
+    // Compute train/test curves across degrees for right panel
+    const errs = [];
+    for (let dd = 1; dd <= 15; dd++) {
+      const bb = polyFit(xs, ysTrain, dd);
+      errs.push({
+        d: dd,
+        tr: mse(ysTrain, xs.map(x => polyEval(bb, x))),
+        te: mse(ysTest, xsTest.map(x => polyEval(bb, x)))
+      });
+    }
+
+    // Left panel: fit (0 to 300 px wide)
+    const LW = 280, LH = 220, LP = 18;
+    const xScale = x => LP + x * (LW - 2 * LP);
+    const yMin = -1.8, yMax = 1.8;
+    const yScale = y => LP + (1 - (y - yMin) / (yMax - yMin)) * (LH - 2 * LP);
+
+    let pts = '';
+    for (const [x, y] of xs.map((x, i) => [x, ysTrain[i]])) {
+      pts += `<circle cx="${xScale(x)}" cy="${yScale(y)}" r="2.5" fill="var(--accent)"/>`;
+    }
+    let path = '';
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const y = polyEval(b, x);
+      const cy = Math.max(LP, Math.min(LH - LP, yScale(y)));
+      path += (i === 0 ? 'M' : 'L') + xScale(x) + ',' + cy + ' ';
+    }
+    // True function
+    let truePath = '';
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const y = Math.sin(2 * Math.PI * x);
+      truePath += (i === 0 ? 'M' : 'L') + xScale(x) + ',' + yScale(y) + ' ';
+    }
+
+    // Right panel
+    const RX = 320, RW = 270, RP = 18;
+    const maxErr = Math.max(...errs.map(e => Math.max(e.tr, Math.min(e.te, 3))));
+    const ex = d => RX + RP + (d - 1) / 14 * (RW - 2 * RP);
+    const ey = v => LP + (1 - Math.min(v, maxErr) / maxErr) * (LH - 2 * LP);
+    let trPath = '', tePath = '';
+    errs.forEach((e, i) => {
+      trPath += (i === 0 ? 'M' : 'L') + ex(e.d) + ',' + ey(e.tr) + ' ';
+      tePath += (i === 0 ? 'M' : 'L') + ex(e.d) + ',' + ey(Math.min(e.te, maxErr)) + ' ';
+    });
+    const cx = ex(d);
+
+    svg.innerHTML = `
+      <g>
+        <rect x="0" y="0" width="${LW + 20}" height="${LH + 10}" fill="transparent"/>
+        <path d="${truePath}" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4,3" fill="none"/>
+        <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>
+        ${pts}
+        <text x="${LP}" y="${LH + 4}" font-size="10" fill="var(--ink-3)">fit (orange) vs truth (dashed)</text>
+      </g>
+      <g>
+        <line x1="${RX + RP}" y1="${LH - LP}" x2="${RX + RW - RP}" y2="${LH - LP}" stroke="var(--ink-3)"/>
+        <line x1="${RX + RP}" y1="${LP}" x2="${RX + RP}" y2="${LH - LP}" stroke="var(--ink-3)"/>
+        <path d="${trPath}" stroke="var(--ok)" stroke-width="2" fill="none"/>
+        <path d="${tePath}" stroke="var(--danger)" stroke-width="2" fill="none"/>
+        <line x1="${cx}" y1="${LP}" x2="${cx}" y2="${LH - LP}" stroke="var(--ink)" stroke-dasharray="2,2"/>
+        <text x="${RX + RP}" y="${LP - 4}" font-size="10" fill="var(--ok)">training error</text>
+        <text x="${RX + RP + 90}" y="${LP - 4}" font-size="10" fill="var(--danger)">test error</text>
+        <text x="${RX + RP}" y="${LH + 4}" font-size="10" fill="var(--ink-3)">flexibility (polynomial degree) →</text>
+      </g>
+    `;
+    out.textContent = `flexibility = ${d}  ·  train MSE = ${trainErr.toFixed(3)}  ·  test MSE = ${testErr.toFixed(3)}`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+
+// Bias-variance decomposition viz
+(function() {
+  const svg = document.getElementById('bvSvg');
+  const slider = document.getElementById('bvSlider');
+  const out = document.getElementById('bvReadout');
+  if (!svg) return;
+  const W = 600, H = 240, pad = 30;
+
+  function render() {
+    const c = parseInt(slider.value, 10);
+    // Synthetic curves: bias² drops, variance rises, noise flat
+    const pts = [];
+    for (let i = 1; i <= 20; i++) {
+      const bias2 = 1.8 * Math.exp(-0.3 * i);
+      const variance = 0.05 * Math.pow(i, 1.2);
+      const noise = 0.4;
+      pts.push({ c: i, b2: bias2, v: variance, n: noise, total: bias2 + variance + noise });
+    }
+    const maxY = Math.max(...pts.map(p => p.total)) * 1.15;
+    const X = ci => pad + (ci - 1) / 19 * (W - 2 * pad);
+    const Y = v => H - pad - (v / maxY) * (H - 2 * pad);
+
+    const path = (key, color) => {
+      let d = '';
+      pts.forEach((p, i) => d += (i === 0 ? 'M' : 'L') + X(p.c) + ',' + Y(p[key]) + ' ');
+      return `<path d="${d}" stroke="${color}" stroke-width="2" fill="none"/>`;
+    };
+
+    const cur = pts[c - 1];
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--ink-3)"/>
+      <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H - pad}" stroke="var(--ink-3)"/>
+      ${path('b2', 'var(--accent)')}
+      ${path('v', '#3a6fb0')}
+      ${path('n', 'var(--ink-3)')}
+      ${path('total', 'var(--ink)')}
+      <line x1="${X(c)}" y1="${pad}" x2="${X(c)}" y2="${H - pad}" stroke="var(--ink)" stroke-dasharray="3,3"/>
+      <text x="${W - pad - 5}" y="${H - pad - 4}" text-anchor="end" font-size="11" fill="var(--ink-3)">model complexity →</text>
+      <text x="${pad + 4}" y="${pad + 12}" font-size="11" fill="var(--accent)">bias²</text>
+      <text x="${pad + 4}" y="${pad + 26}" font-size="11" fill="#3a6fb0">variance</text>
+      <text x="${pad + 4}" y="${pad + 40}" font-size="11" fill="var(--ink-3)">irreducible noise</text>
+      <text x="${pad + 4}" y="${pad + 54}" font-size="11" fill="var(--ink)" font-weight="600">total test error</text>
+    `;
+    out.textContent = `complexity = ${c} · bias² ≈ ${cur.b2.toFixed(2)} · variance ≈ ${cur.v.toFixed(2)} · total ≈ ${cur.total.toFixed(2)}`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+
+// KNN classifier boundary viz
+(function() {
+  const svg = document.getElementById('knnSvg');
+  const slider = document.getElementById('knnK');
+  const out = document.getElementById('knnReadout');
+  if (!svg) return;
+  const W = 600, H = 300;
+
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  // Two gaussian blobs
+  const rng = mulberry32(7);
+  const pts = [];
+  function gauss() { return Math.sqrt(-2 * Math.log(rng())) * Math.cos(2 * Math.PI * rng()); }
+  for (let i = 0; i < 40; i++) pts.push({ x: 0.3 + 0.12 * gauss(), y: 0.4 + 0.12 * gauss(), c: 0 });
+  for (let i = 0; i < 40; i++) pts.push({ x: 0.7 + 0.12 * gauss(), y: 0.6 + 0.12 * gauss(), c: 1 });
+
+  const grid = 40;
+  function classify(x, y, K) {
+    const d = pts.map(p => ({ dd: (p.x - x) ** 2 + (p.y - y) ** 2, c: p.c }));
+    d.sort((a, b) => a.dd - b.dd);
+    let s = 0;
+    for (let i = 0; i < K; i++) s += d[i].c;
+    return s > K / 2 ? 1 : 0;
+  }
+
+  function render() {
+    const K = parseInt(slider.value, 10);
+    let cells = '';
+    const gw = W / grid, gh = H / grid;
+    for (let i = 0; i < grid; i++) {
+      for (let j = 0; j < grid; j++) {
+        const x = (i + 0.5) / grid;
+        const y = (j + 0.5) / grid;
+        const c = classify(x, y, K);
+        const fill = c === 0 ? 'rgba(180,87,42,0.14)' : 'rgba(58,111,176,0.14)';
+        cells += `<rect x="${i * gw}" y="${j * gh}" width="${gw}" height="${gh}" fill="${fill}" stroke="none"/>`;
+      }
+    }
+    let dots = '';
+    for (const p of pts) {
+      const fill = p.c === 0 ? 'var(--accent)' : '#3a6fb0';
+      dots += `<circle cx="${p.x * W}" cy="${p.y * H}" r="4" fill="${fill}"/>`;
+    }
+    svg.innerHTML = cells + dots;
+    out.textContent = `K = ${K}  ·  ${K === 1 ? 'most jagged (overfit)' : K > 25 ? 'smooth, risk of underfit' : 'balanced'}`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

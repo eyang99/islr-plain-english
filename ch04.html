@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 4 · Classification · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch03.html">← Ch 3</a>
+  <a href="ch05.html">Ch 5 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 4</span>
+  <h1 class="serif">Classification</h1>
+  <p class="subtitle">The output is a category, not a number. Four ways to draw a boundary between classes, all doing roughly the same job with different assumptions.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Classification is about estimating P(Y = class | X) and thresholding.</h3>
+    <p>Every method in this chapter — logistic, LDA, QDA, naive Bayes — estimates the probability of each class given the inputs, then assigns you to the most probable class. They differ only in <em>how</em> they model those probabilities.</p>
+  </div>
+
+  <h2>1. Why not just use linear regression?</h2>
+  <div class="concept">
+    <p>You could code class labels as 0/1 and run linear regression. Two problems:</p>
+    <ol>
+      <li>Predictions leak outside [0, 1], so they can't be read as probabilities.</li>
+      <li>With 3+ unordered classes (red/blue/green), coding them 1/2/3 imposes an arbitrary ordering.</li>
+    </ol>
+    <p>So we need models that respect "this is a probability between 0 and 1."</p>
+  </div>
+
+  <h2>2. Logistic regression</h2>
+  <div class="concept">
+    <p>Instead of predicting Y directly, predict the probability of class 1 using the <strong>logistic (sigmoid) function</strong>:</p>
+    <p>$$ P(Y = 1 \mid X) = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}} $$</p>
+    <p>The sigmoid squashes any real number into (0, 1). Negative inputs → close to 0. Positive → close to 1. Zero → 0.5.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>β₀ (intercept): <input type="range" id="lrb0" min="-5" max="5" step="0.1" value="0" /></label>
+        <label>β₁ (slope): <input type="range" id="lrb1" min="-3" max="3" step="0.1" value="1" /></label>
+        <span class="readout" id="lrReadout"></span>
+      </div>
+      <svg id="logSvg" viewBox="0 0 600 240" aria-label="Logistic curve"></svg>
+      <p class="tagline">β₁ controls steepness. β₀ shifts the curve left/right. Classification boundary = where the curve crosses 0.5.</p>
+    </div>
+
+    <h3>Odds and the log-odds trick</h3>
+    <p>Rearrange the sigmoid and take the log of both sides:</p>
+    <p>$$ \log\!\left(\frac{P(Y=1 \mid X)}{1 - P(Y=1 \mid X)}\right) = \beta_0 + \beta_1 X $$</p>
+    <p>The <em>log-odds</em> is linear in X. That's why we call it "logistic regression" — it's linear regression on the log-odds scale.</p>
+
+    <h3>Reading the coefficients</h3>
+    <p>$\beta_1 = 0.5$ means: a 1-unit increase in X multiplies the odds of class 1 by $e^{0.5} \approx 1.65$. Not the probability — the <em>odds</em>. People screw this up all the time.</p>
+
+    <details class="math"><summary>Fitting: maximum likelihood</summary>
+      <p>Unlike linear regression, there's no closed form. You maximize the likelihood:</p>
+      <p>$$ \ell(\beta) = \prod_{i: y_i=1} p(x_i) \prod_{i: y_i=0} (1 - p(x_i)) $$</p>
+      <p>Usually done by Newton-Raphson or gradient methods. Software does this for you.</p>
+    </details>
+  </div>
+
+  <h2>3. Linear Discriminant Analysis (LDA)</h2>
+  <div class="concept">
+    <p>Flip the problem around using Bayes' rule. Instead of modeling $P(Y \mid X)$ directly, model $P(X \mid Y)$ and the class prior $P(Y)$, then combine them.</p>
+    <p>$$ P(Y = k \mid X) = \frac{P(X \mid Y = k) \cdot P(Y = k)}{P(X)} $$</p>
+
+    <p>LDA assumes: within each class, X follows a <strong>multivariate Gaussian with the same covariance matrix across classes</strong>. Under that assumption, the boundary between classes turns out to be linear.</p>
+
+    <div class="analogy">Imagine each class is a cloud of points shaped like a Gaussian. LDA assumes all clouds have the same shape and rotation — they just sit in different places. The decision line is exactly halfway between each pair of class centers (weighted by prior).</div>
+
+    <h3>When LDA beats logistic regression</h3>
+    <ul>
+      <li>Classes are well-separated (logistic regression's estimates get unstable).</li>
+      <li>n is small and the Gaussian assumption is roughly OK.</li>
+      <li>You have more than 2 classes (LDA extends naturally; logistic needs multinomial extension).</li>
+    </ul>
+  </div>
+
+  <h2>4. Quadratic Discriminant Analysis (QDA)</h2>
+  <div class="concept">
+    <p>Same as LDA, but drop the "same covariance across classes" assumption. Each class gets its own covariance matrix. Boundaries become <strong>quadratic</strong> (curved).</p>
+
+    <div class="two-col">
+      <div>
+        <strong>Use LDA when</strong>
+        <ul>
+          <li>Small n (QDA has many more parameters to estimate)</li>
+          <li>Classes plausibly share covariance</li>
+          <li>You want a simpler story</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Use QDA when</strong>
+        <ul>
+          <li>Large n (can afford more parameters)</li>
+          <li>Classes clearly have different shapes</li>
+          <li>A linear boundary would miss structure</li>
+        </ul>
+      </div>
+    </div>
+    <p>It's a bias-variance tradeoff again. LDA has higher bias (the equal-covariance assumption) but lower variance. QDA is more flexible but needs more data.</p>
+  </div>
+
+  <h2>5. Naive Bayes</h2>
+  <div class="concept">
+    <p>Same Bayes-rule setup as LDA, but with a drastic simplification: assume that, <em>within each class</em>, the features are independent of each other.</p>
+    <p>$$ P(X_1, X_2, \dots, X_p \mid Y = k) = \prod_{j=1}^p P(X_j \mid Y = k) $$</p>
+    <p>This is almost never true. Age and income aren't independent inside "bought product" either. But the model still works remarkably well, because what you lose in accuracy of the probabilities, you gain in stability from fewer parameters.</p>
+    <div class="analogy">Naive Bayes is the <strong>Mr. Magoo</strong> of classifiers — its assumptions are absurd, but somehow it bumbles into the right answer often enough to be useful.</div>
+
+    <h3>Why it's especially useful</h3>
+    <ul>
+      <li>High-dimensional data (text classification, spam filtering).</li>
+      <li>Very small training sets where richer models overfit.</li>
+      <li>Mixed categorical and continuous features (easy to plug in per-feature densities).</li>
+    </ul>
+  </div>
+
+  <h2>6. Comparing the four</h2>
+  <div class="concept">
+    <table>
+      <thead><tr><th>Method</th><th>Decision boundary</th><th>Key assumption</th><th>Good for</th></tr></thead>
+      <tbody>
+        <tr><td>Logistic regression</td><td>Linear</td><td>Log-odds linear in X</td><td>General purpose, interpretability, probabilities well-calibrated</td></tr>
+        <tr><td>LDA</td><td>Linear</td><td>Gaussian per class, shared covariance</td><td>Small n, well-separated classes, &gt;2 classes</td></tr>
+        <tr><td>QDA</td><td>Quadratic</td><td>Gaussian per class, different covariances</td><td>Large n, classes have different shapes</td></tr>
+        <tr><td>Naive Bayes</td><td>Depends on feature models</td><td>Features independent within class</td><td>High-dimensional, small n, text</td></tr>
+        <tr><td>KNN (Ch 2)</td><td>Whatever the data wants</td><td>None</td><td>Low dimensions, lots of data, nonlinear truth</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout"><strong>Rule of thumb:</strong> if you're unsure, start with logistic regression. It's the Honda Civic of classifiers — not the fastest, but reliable, well-understood, and gets you 80% of the way there.</div>
+  </div>
+
+  <h2>7. Confusion matrix, sensitivity, specificity</h2>
+  <div class="concept">
+    <p>Accuracy = (correct predictions) / (total). But it can hide a lot. If 99% of emails are not spam, a model that always says "not spam" gets 99% accuracy and catches zero spam. Useless.</p>
+
+    <h3>The confusion matrix</h3>
+    <table>
+      <thead><tr><th></th><th>Predicted +</th><th>Predicted −</th></tr></thead>
+      <tbody>
+        <tr><th>Actual +</th><td>TP (true positive)</td><td>FN (false negative)</td></tr>
+        <tr><th>Actual −</th><td>FP (false positive)</td><td>TN (true negative)</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Sensitivity (recall, TPR)</strong> = TP / (TP + FN). Of actual positives, how many did I catch?</li>
+      <li><strong>Specificity (TNR)</strong> = TN / (TN + FP). Of actual negatives, how many did I correctly dismiss?</li>
+      <li><strong>Precision</strong> = TP / (TP + FP). Of my positive predictions, how many are right?</li>
+    </ul>
+    <p>You can trade sensitivity for specificity by changing the threshold. The <strong>ROC curve</strong> plots sensitivity vs (1 − specificity) at every threshold. <strong>AUC</strong> (area under the curve) summarizes performance across all thresholds — 0.5 is random, 1.0 is perfect.</p>
+
+    <div class="analogy">Sensitivity = "don't miss the sick patients." Specificity = "don't scare healthy patients." A test for a rare deadly disease should have high sensitivity even at the cost of specificity. A test for a common cold can prioritize specificity. Pick the knob based on what the mistake costs.</div>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Why can't you use plain linear regression for classification?</strong></div>
+      <div class="fc-back">Predictions escape [0,1] (not valid probabilities) and with 3+ categories, numerical codes impose a false ordering.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What does the sigmoid function do?</strong></div>
+      <div class="fc-back">Squashes any real number to (0, 1) so the output is a valid probability. It's S-shaped.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>In logistic regression, what does β₁ mean?</strong></div>
+      <div class="fc-back">A 1-unit increase in X multiplies the ODDS of class 1 by e^β₁. Not the probability. Odds.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>State LDA's key assumption.</strong></div>
+      <div class="fc-back">Within each class, X is multivariate Gaussian, and all classes share the same covariance matrix. That assumption makes the decision boundary linear.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>LDA vs QDA, trade-off?</strong></div>
+      <div class="fc-back">LDA: fewer parameters, linear boundary, higher bias, lower variance. QDA: per-class covariance, quadratic boundary, lower bias, higher variance. LDA for small n, QDA for large n.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>What's "naive" about Naive Bayes?</strong></div>
+      <div class="fc-back">Assumes features are independent within each class. Usually false, but the simplification makes the model stable and fast, and it still works well on many problems.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Define sensitivity and specificity.</strong></div>
+      <div class="fc-back">Sensitivity (TPR) = TP / (TP + FN) — fraction of actual positives caught. Specificity (TNR) = TN / (TN + FP) — fraction of actual negatives correctly dismissed.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>What does the ROC curve show?</strong></div>
+      <div class="fc-back">Sensitivity vs (1 − specificity) across every classification threshold. AUC summarizes it: 0.5 is random, 1.0 perfect.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Why is accuracy a bad metric for imbalanced classes?</strong></div>
+      <div class="fc-back">If one class is 99%, always predicting it gets 99% accuracy while being useless. Use sensitivity/specificity/F1 or AUC instead.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>What's the Bayes decision rule?</strong></div>
+      <div class="fc-back">Assign x to the class with highest P(Y=k | x). This minimizes error. LDA/QDA/Naive Bayes are all approximations of this rule.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You have a logistic regression predicting fraud with 1% base rate. Your model has 99% accuracy. Your boss is thrilled. Why should you be skeptical?</div>
+  <div class="prompt">Under what data conditions would you pick LDA over logistic regression?</div>
+  <div class="prompt">Naive Bayes assumes feature independence. When does that falsely optimistic assumption still produce a good classifier?</div>
+
+  <div class="chapter-nav">
+    <a href="ch03.html">← Ch 3</a>
+    <a href="ch05.html">Ch 5 · Resampling →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('logSvg');
+  const sb0 = document.getElementById('lrb0');
+  const sb1 = document.getElementById('lrb1');
+  const out = document.getElementById('lrReadout');
+  if (!svg) return;
+  const W = 600, H = 240, pad = 30;
+  const xmin = -6, xmax = 6;
+  const X = x => pad + (x - xmin) / (xmax - xmin) * (W - 2 * pad);
+  const Y = y => H - pad - y * (H - 2 * pad);
+
+  function render() {
+    const b0 = parseFloat(sb0.value), b1 = parseFloat(sb1.value);
+    let path = '';
+    for (let i = 0; i <= 200; i++) {
+      const x = xmin + (xmax - xmin) * i / 200;
+      const p = 1 / (1 + Math.exp(-(b0 + b1 * x)));
+      path += (i === 0 ? 'M' : 'L') + X(x) + ',' + Y(p) + ' ';
+    }
+    const boundaryX = b1 !== 0 ? -b0 / b1 : null;
+    const bline = boundaryX !== null && boundaryX > xmin && boundaryX < xmax
+      ? `<line x1="${X(boundaryX)}" y1="${Y(0)}" x2="${X(boundaryX)}" y2="${Y(1)}" stroke="var(--ink)" stroke-dasharray="3,3"/>
+         <text x="${X(boundaryX) + 4}" y="${Y(1) + 12}" font-size="10" fill="var(--ink-2)">boundary (p=0.5) at X=${boundaryX.toFixed(2)}</text>`
+      : '';
+    svg.innerHTML = `
+      <line x1="${pad}" y1="${Y(0.5)}" x2="${W - pad}" y2="${Y(0.5)}" stroke="var(--ink-3)" stroke-dasharray="2,3"/>
+      <line x1="${pad}" y1="${Y(0)}" x2="${W - pad}" y2="${Y(0)}" stroke="var(--ink-3)"/>
+      <line x1="${pad}" y1="${Y(1)}" x2="${W - pad}" y2="${Y(1)}" stroke="var(--ink-3)" stroke-width="0.5"/>
+      <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>
+      ${bline}
+      <text x="${pad}" y="${Y(1) - 4}" font-size="10" fill="var(--ink-3)">P = 1</text>
+      <text x="${pad}" y="${Y(0) + 12}" font-size="10" fill="var(--ink-3)">P = 0</text>
+    `;
+    out.textContent = `P(Y=1|X) = σ(${b0.toFixed(1)} + ${b1.toFixed(1)}·X)`;
+  }
+  sb0.addEventListener('input', render);
+  sb1.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

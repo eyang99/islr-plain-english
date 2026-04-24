@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 13 · Multiple Testing · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch12.html">← Ch 12</a>
+  <a href="index.html">Home</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 13 · the honesty chapter</span>
+  <h1 class="serif">Multiple Testing</h1>
+  <p class="subtitle">Test one hypothesis at α = 0.05 and you have a 5% false-positive rate. Test 100 hypotheses at α = 0.05 and you expect about 5 false positives by pure chance. Here's how to stop fooling yourself.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Running many tests inflates false positives. Two strategies to control the damage: be strict (FWER) or be probabilistic (FDR).</h3>
+    <p>FWER (family-wise error rate) controls the probability of making <em>any</em> false discovery across all tests. Strict. Conservative. Bonferroni. FDR (false discovery rate) controls the <em>expected proportion</em> of your discoveries that are false. Looser. Discovers more. Benjamini-Hochberg. Which you pick depends on the stakes.</p>
+  </div>
+
+  <h2>1. The setup: why one test isn't like many</h2>
+  <div class="concept">
+    <p>You test a coin at α = 0.05. Fair coins get flagged 5% of the time (Type I error). Now test 100 coins. Each has a 5% chance of a spurious rejection. <em>The chance of at least one false alarm is about</em> $1 - (1 - 0.05)^{100} \approx 0.994$. Almost certain.</p>
+    <div class="analogy">If every security camera has a 5% chance of a false alarm per hour, one camera is mostly reliable. A building with 100 cameras will have someone running to check a ghost every hour. More tests = more ghosts.</div>
+  </div>
+
+  <h2>2. The 2×2 table of errors across many tests</h2>
+  <div class="concept">
+    <p>Suppose you run $m$ tests. Label each test by whether the null is true and whether you reject it.</p>
+    <table>
+      <thead><tr><th></th><th>Reject H₀</th><th>Don't reject</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><th>H₀ true</th><td>V (false positives)</td><td>U</td><td>m₀</td></tr>
+        <tr><th>H₀ false</th><td>S (true positives)</td><td>T</td><td>m − m₀</td></tr>
+        <tr><th>Total</th><td>R (rejections)</td><td>m − R</td><td>m</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>FWER</strong> = $P(V \geq 1)$ — probability of making any false discovery.</li>
+      <li><strong>FDR</strong> = $E[V/R]$ — expected fraction of your discoveries that are false. (With $V/R = 0$ when $R = 0$.)</li>
+    </ul>
+  </div>
+
+  <h2>3. Controlling FWER — Bonferroni</h2>
+  <div class="concept">
+    <p>Simplest, strictest. Test each hypothesis at $\alpha / m$ instead of $\alpha$. That's it.</p>
+    <p>Why it works: by the union bound, the probability of any false positive across $m$ tests is at most $m \cdot (\alpha/m) = \alpha$.</p>
+    <p><strong>Pros</strong>: dead simple, no assumptions.</p>
+    <p><strong>Cons</strong>: very conservative. With $m = 1000$, you need $p &lt; 0.00005$ to claim anything significant. You miss many real effects.</p>
+
+    <h3>Holm's step-down</h3>
+    <p>A strictly better FWER procedure than Bonferroni. Sort p-values smallest to largest, test against thresholds $\alpha/m, \alpha/(m-1), \ldots, \alpha/1$. Stops as soon as one fails. Always at least as powerful as Bonferroni.</p>
+  </div>
+
+  <h2>4. Controlling FDR — Benjamini-Hochberg</h2>
+  <div class="concept">
+    <p>FWER is too strict for big science. In genomics you test 20,000 genes. You're OK if a few are false positives as long as most of your declared hits are real. FDR controls the <em>fraction</em> of discoveries that are false.</p>
+
+    <h3>The BH procedure</h3>
+    <ol>
+      <li>Sort p-values smallest to largest: $p_{(1)} \leq p_{(2)} \leq \dots \leq p_{(m)}$.</li>
+      <li>For each $i$, compute the threshold $q \cdot i / m$ where $q$ is your target FDR (say 0.1).</li>
+      <li>Find the largest $i$ such that $p_{(i)} \leq q \cdot i / m$.</li>
+      <li>Reject all hypotheses with p-values at or below that one.</li>
+    </ol>
+    <p>Then the expected FDR is at most $q$.</p>
+
+    <div class="analogy">FWER is a bouncer demanding IDs; even one fake lets the whole night fail. FDR is a bouncer who accepts that a few fakes slip in, as long as most of the people inside are legit. For exploratory science, FDR usually makes more sense.</div>
+
+    <div class="callout warn"><strong>FWER ≠ FDR.</strong> "I controlled FWER at 0.05" means "probably zero false positives total." "I controlled FDR at 0.05" means "about 5% of my rejections are false." Very different guarantees.</div>
+  </div>
+
+  <h2>5. A concrete example</h2>
+  <div class="concept">
+    <p>You test 1000 hypotheses and get 30 p-values below 0.05. How many real discoveries?</p>
+    <ul>
+      <li><strong>Uncorrected</strong>: treat all 30 as discoveries. Expected false positives ≈ 1000 × 0.05 = 50. You have <em>fewer rejections than expected by chance</em>. Probably nothing is real.</li>
+      <li><strong>Bonferroni at 0.05</strong>: require p &lt; 0.00005. You'd keep only the very smallest. Very few discoveries, but highly trusted.</li>
+      <li><strong>BH at FDR 0.1</strong>: keep everything below roughly $0.1 \cdot \text{rank}/1000$. You might keep ~20 with an expected 2 false positives.</li>
+    </ul>
+    <p>Same data, dramatically different conclusions. That's the whole chapter in one example.</p>
+  </div>
+
+  <h2>6. Multiple testing shows up everywhere in ML</h2>
+  <div class="concept">
+    <ul>
+      <li><strong>Feature selection</strong>: testing thousands of variables for association with Y. Bonferroni too strict, BH often used.</li>
+      <li><strong>A/B testing</strong>: running many simultaneous experiments, or peeking at results repeatedly (which is multiple testing across time).</li>
+      <li><strong>Hyperparameter search</strong>: grid-searching and picking the best on a validation set is a form of multiple testing — the "best" will be optimistically biased.</li>
+      <li><strong>Subgroup analysis</strong>: "Did the drug work in men? In women? Under 50? Over 50?" The more subgroups you test, the more likely one "works" by chance.</li>
+    </ul>
+    <p>Any time you ask your data many questions, the answers need multiple-testing correction to be trusted.</p>
+  </div>
+
+  <h2>7. Permutation tests — a computational alternative</h2>
+  <div class="concept">
+    <p>Parametric tests rely on distributional assumptions. Permutation tests don't. If your null is "treatment and control are from the same distribution," shuffle the labels many times and recompute your statistic. The fraction of shuffles with a statistic at least as extreme as yours is your p-value — no distributional assumption needed.</p>
+    <p>Works great for multiple testing too: permute and recompute <em>the maximum statistic across all tests</em>, giving a null distribution for the max. Rejections at that threshold automatically control FWER, even under dependence.</p>
+  </div>
+
+  <div class="card big-idea">
+    <h3 style="margin-top:0">The one-sentence summary</h3>
+    <p>If you test one thing, α = 0.05 means 5% false positives. If you test a thousand things, α = 0.05 means fifty. Either tighten the threshold (Bonferroni/Holm) to stop any false positive, or accept some and control their fraction (Benjamini-Hochberg). Which one depends on whether one wrong answer is a disaster or just a nuisance.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Why does running more tests inflate false positives?</strong></div>
+      <div class="fc-back">Each test at α has an α chance of a false positive. Across m independent tests, the probability of at least one is ≈ 1 − (1 − α)^m → quickly approaches 1.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Define FWER.</strong></div>
+      <div class="fc-back">Family-wise error rate: the probability of making at least one false rejection across all tests. Controls "any false positive at all."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Define FDR.</strong></div>
+      <div class="fc-back">False discovery rate: the expected fraction of rejections that are false. Controls "most of my hits are real," not "zero fakes."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>How does Bonferroni work?</strong></div>
+      <div class="fc-back">Test each hypothesis at α/m instead of α. Guarantees FWER ≤ α. Simple, overly conservative for large m.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>How does Benjamini-Hochberg work?</strong></div>
+      <div class="fc-back">Sort p-values. Find the largest i where p_(i) ≤ q·i/m. Reject all hypotheses at rank ≤ i. Controls FDR ≤ q.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>FWER vs FDR — when to pick each?</strong></div>
+      <div class="fc-back">FWER when a single false positive is a disaster (e.g., approving a drug). FDR when you want to discover as many true effects as possible and can tolerate a known fraction of noise (e.g., genomics screens).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>What's a permutation test?</strong></div>
+      <div class="fc-back">Repeatedly shuffle the group labels, recompute the test statistic, and see how often it's as extreme as the observed. No distributional assumption; valid under dependence.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>You run 1000 tests, 30 reject at p &lt; 0.05. What's wrong if someone reports "30 discoveries"?</strong></div>
+      <div class="fc-back">Under the global null, you'd expect 50 p-values below 0.05 by chance. 30 is actually LESS than chance. No correction, no story.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Is hyperparameter search a multiple-testing problem?</strong></div>
+      <div class="fc-back">Yes. Picking the best hyperparameter over a grid is implicitly choosing the winner of many comparisons. The reported performance is optimistically biased unless you evaluate the final pick on a truly held-out set.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You analyze a 20-gene panel and find one gene with p = 0.03. Your PI says "publish." What do you say?</div>
+  <div class="prompt">You run 10 A/B tests. Two come back significant at p &lt; 0.05. Your PM wants to ship both. What's your response?</div>
+  <div class="prompt">Explain to a non-statistician friend why testing 100 coin flips is different from testing 1.</div>
+
+  <hr/>
+  <div class="card big-idea">
+    <h3 style="margin-top:0">You made it. Now do the Feynman pass.</h3>
+    <p>The point of this site isn't reading it — it's <em>teaching it</em>. Pick any chapter. Close the tab. Try to explain the Big Idea and the flashcards out loud to an imaginary student. Wherever you stumble, re-open the page. That's the whole technique.</p>
+    <p>The five things that matter across all 13 chapters:</p>
+    <ol>
+      <li><strong>Test error &gt; training error.</strong> Always.</li>
+      <li><strong>Bias-variance tradeoff.</strong> Every knob in ML is a version of this.</li>
+      <li><strong>Cross-validate everything.</strong> Don't eyeball.</li>
+      <li><strong>Regularize when in doubt.</strong> Ridge, lasso, dropout, early stopping — all versions of "prefer smaller models."</li>
+      <li><strong>More questions, more mistakes.</strong> Correct for multiple testing.</li>
+    </ol>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="ch12.html">← Ch 12</a>
+    <a href="index.html">Back to Home</a>
+  </div>
+</main>
+</body>
+</html>

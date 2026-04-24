@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ISLR, in plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <span class="brand">ISLR · plain English</span>
+  <a href="index.html">Home</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <select onchange="if(this.value)location.href=this.value">
+    <option value="">Jump to chapter…</option>
+    <option value="ch01.html">1 · Introduction</option>
+    <option value="ch02.html">2 · Statistical Learning</option>
+    <option value="ch03.html">3 · Linear Regression</option>
+    <option value="ch04.html">4 · Classification</option>
+    <option value="ch05.html">5 · Resampling</option>
+    <option value="ch06.html">6 · Model Selection & Regularization</option>
+    <option value="ch07.html">7 · Beyond Linearity</option>
+    <option value="ch08.html">8 · Trees</option>
+    <option value="ch09.html">9 · SVM</option>
+    <option value="ch10.html">10 · Deep Learning</option>
+    <option value="ch11.html">11 · Survival Analysis</option>
+    <option value="ch12.html">12 · Unsupervised Learning</option>
+    <option value="ch13.html">13 · Multiple Testing</option>
+  </select>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Feynman-style study site</span>
+
+  <div class="card big-idea">
+    <span class="chip">How to use this</span>
+    <h3 style="margin-top:10px">Three passes per chapter</h3>
+    <ol>
+      <li><strong>Read the "Big Idea"</strong> — one paragraph. If it doesn't click, the rest won't either. Re-read.</li>
+      <li><strong>Play with the visualizations</strong>. Move sliders. Watch what breaks. Intuition lives in your fingers.</li>
+      <li><strong>Flip the flashcards at the bottom</strong>. If you can't explain the back of the card to a stranger, you don't know it. Go back up.</li>
+    </ol>
+    <p class="tagline">The point isn't to read fast. It's to close the tab and still be able to draw the picture on a napkin.</p>
+  </div>
+
+  <h2>Start here</h2>
+  <div class="grid">
+    <a class="ch-card" href="primer.html">
+      <span class="num">PRIMER</span>
+      <h3>Probability & Statistics, finally</h3>
+      <p>The stuff every ML book assumes you remember. Distributions, expectation, CLT, Bayes, p-values. In pictures.</p>
+    </a>
+    <a class="ch-card" href="ch01.html">
+      <span class="num">CH 01</span>
+      <h3>Introduction</h3>
+      <p>What "statistical learning" even means. Supervised vs unsupervised. Notation that won't bite.</p>
+    </a>
+    <a class="ch-card" href="ch02.html">
+      <span class="num">CH 02</span>
+      <h3>Statistical Learning</h3>
+      <p>The true f(x), bias-variance tradeoff, KNN. The single most important chapter in the book.</p>
+    </a>
+  </div>
+
+  <h2>The supervised half</h2>
+  <div class="grid">
+    <a class="ch-card" href="ch03.html"><span class="num">CH 03</span><h3>Linear Regression</h3><p>Fit a line. Read the coefficients. Know when it lies to you.</p></a>
+    <a class="ch-card" href="ch04.html"><span class="num">CH 04</span><h3>Classification</h3><p>Logistic, LDA, QDA, naive Bayes. Four ways to draw a boundary.</p></a>
+    <a class="ch-card" href="ch05.html"><span class="num">CH 05</span><h3>Resampling</h3><p>Cross-validation and the bootstrap. How to measure a model honestly.</p></a>
+    <a class="ch-card" href="ch06.html"><span class="num">CH 06</span><h3>Selection & Regularization</h3><p>Too many predictors. Ridge. Lasso. Shrink the noise.</p></a>
+    <a class="ch-card" href="ch07.html"><span class="num">CH 07</span><h3>Beyond Linearity</h3><p>Curves, splines, GAMs. When a line isn't enough.</p></a>
+    <a class="ch-card" href="ch08.html"><span class="num">CH 08</span><h3>Trees, Forests, Boosting</h3><p>Decision trees and the ensembles that beat them.</p></a>
+    <a class="ch-card" href="ch09.html"><span class="num">CH 09</span><h3>Support Vector Machines</h3><p>The widest possible street between two classes.</p></a>
+    <a class="ch-card" href="ch10.html"><span class="num">CH 10</span><h3>Deep Learning</h3><p>Neural nets, demystified. When they win and when they lose.</p></a>
+    <a class="ch-card" href="ch11.html"><span class="num">CH 11</span><h3>Survival Analysis</h3><p>Time-to-event when you don't see every event.</p></a>
+  </div>
+
+  <h2>The unsupervised half + honesty</h2>
+  <div class="grid">
+    <a class="ch-card" href="ch12.html"><span class="num">CH 12</span><h3>Unsupervised Learning</h3><p>PCA, K-means, hierarchical clustering. Finding structure without labels.</p></a>
+    <a class="ch-card" href="ch13.html"><span class="num">CH 13</span><h3>Multiple Testing</h3><p>Test a thousand things and something will look significant. The math of not fooling yourself.</p></a>
+  </div>
+
+  <h2>If you only remember five things</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Test error, not training error.</strong> A model that nails the training set and chokes on new data learned the noise, not the signal.</li>
+      <li><strong>Bias-variance tradeoff.</strong> Every model error is either <em>too simple to see the pattern</em> or <em>too wiggly and chasing noise</em>. You pay for one with the other.</li>
+      <li><strong>Cross-validation.</strong> The honest way to guess how a model will do on data it hasn't seen yet.</li>
+      <li><strong>Regularization.</strong> When you have too many knobs, tell the model "prefer small knobs." Ridge and lasso are just different flavors of that preference.</li>
+      <li><strong>More tests → more false positives.</strong> Run 100 tests at p &lt; 0.05 and you expect ~5 fake "discoveries." Correct for it or pretend you didn't see it.</li>
+    </ol>
+  </div>
+
+  <p class="tagline" style="margin-top:40px">Source material: James, Witten, Hastie, Tibshirani — <em>An Introduction to Statistical Learning</em> (2nd ed). This site is a personal study guide in my own words with original analogies and visualizations — not a reproduction of the book.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 9 · SVM · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch08.html">← Ch 8</a>
+  <a href="ch10.html">Ch 10 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 9</span>
+  <h1 class="serif">Support Vector Machines</h1>
+  <p class="subtitle">Draw the widest possible empty street between two classes. The street's middle line is your classifier. Then, with a clever trick, extend the same idea to curved boundaries.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Don't just separate the classes. Separate them with the biggest possible margin.</h3>
+    <p>The margin is the distance from the decision boundary to the nearest training points. Maximizing the margin gives a stable classifier that relies only on the "support vectors" — the points sitting on or near the edge of the street.</p>
+  </div>
+
+  <h2>1. The maximal margin classifier</h2>
+  <div class="concept">
+    <p>Suppose two classes are perfectly separable by a straight line (or hyperplane in more dimensions). Many lines work. Which is best?</p>
+    <p>Answer: the one whose <strong>margin</strong> — the perpendicular distance from the line to the nearest training point — is as large as possible. Intuitively, a wider buffer zone makes the classifier less sensitive to which exact points it saw.</p>
+
+    <div class="analogy">Imagine you're laying down a road between two neighborhoods that hate each other. You want the road as wide as possible so nobody feels crowded. The houses pressed right against the road edges are the "support vectors" — they define the road width. The rest don't matter.</div>
+
+    <h3>Limitation</h3>
+    <p>Only works when classes are perfectly separable. In real data they almost never are. So we relax.</p>
+  </div>
+
+  <h2>2. The soft-margin classifier (Support Vector Classifier)</h2>
+  <div class="concept">
+    <p>Allow some points to be on the wrong side of the margin — even on the wrong side of the boundary — and pay a penalty for each violation.</p>
+    <p>The tradeoff is controlled by a cost parameter $C$ (or equivalently $\lambda$ in some formulations):</p>
+    <ul>
+      <li><strong>Large C (small budget for violations)</strong>: few points allowed across. Narrow margin, highly sensitive to outliers. Low bias, high variance.</li>
+      <li><strong>Small C (generous budget)</strong>: wider margin, more misclassifications allowed. More bias, less variance.</li>
+    </ul>
+    <p>C is tuned by cross-validation, like every other bias-variance knob.</p>
+
+    <div class="viz">
+      <div class="controls">
+        <label>Cost C: <input type="range" id="svmC" min="-2" max="3" step="0.1" value="0"/></label>
+        <span class="readout" id="svmCReadout">C = 1</span>
+      </div>
+      <svg id="svmSvg" viewBox="0 0 600 300" aria-label="SVM boundary"></svg>
+      <p class="tagline">Orange/blue dots are two classes. Solid line = decision boundary. Dashed lines = margin edges. Lower C = wider margin, more slack.</p>
+    </div>
+  </div>
+
+  <h2>3. Non-linear boundaries and the kernel trick</h2>
+  <div class="concept">
+    <p>What if a straight line can't separate the classes, even with slack? You could manually add polynomial or interaction features, but that explodes quickly in high dimensions.</p>
+    <p>The <strong>kernel trick</strong> solves this: it turns out that the SVM optimization only depends on dot products between pairs of training points. If you replace those dot products with a <em>kernel function</em> $K(x_i, x_j)$, you're secretly computing a dot product in a much higher-dimensional space — without ever constructing that space.</p>
+
+    <h3>The kernels you'll see</h3>
+    <ul>
+      <li><strong>Linear kernel</strong>: $K(x_i, x_j) = x_i^T x_j$. Recovers the standard SVC.</li>
+      <li><strong>Polynomial kernel</strong>: $K(x_i, x_j) = (1 + x_i^T x_j)^d$. Captures polynomial decision boundaries of degree d.</li>
+      <li><strong>Radial (RBF) kernel</strong>: $K(x_i, x_j) = \exp(-\gamma \|x_i - x_j\|^2)$. The local, flexible default. Infinite-dimensional implicit space.</li>
+    </ul>
+
+    <div class="analogy">Without the kernel trick: "lift my 2D data into 100D, fit a line there." With the kernel trick: "never actually construct the 100D space — just compute pairwise similarities using a clever function, and the math works out the same." A rare genuinely slick trick in stats.</div>
+  </div>
+
+  <h2>4. The RBF kernel, and what γ does</h2>
+  <div class="concept">
+    <p>$\gamma$ controls how fast similarity between points drops with distance.</p>
+    <ul>
+      <li><strong>Small γ</strong>: far-away points still influence each other. Smoother, more linear-looking boundary. Higher bias, lower variance.</li>
+      <li><strong>Large γ</strong>: only very close points matter. Boundary wraps tightly around individual points. Lower bias, higher variance, overfitting risk.</li>
+    </ul>
+    <p>RBF-SVM has two hyperparameters (C and γ); both tune by cross-validation, usually on a grid.</p>
+  </div>
+
+  <h2>5. SVM vs logistic regression</h2>
+  <div class="concept">
+    <p>They're closer than they look. Both can be written as "minimize a loss + regularization." The difference is the loss function:</p>
+    <ul>
+      <li><strong>Logistic regression</strong>: log loss. Every point contributes, always.</li>
+      <li><strong>SVM</strong>: hinge loss. Points safely on the correct side of the margin contribute zero. Only boundary points (support vectors) shape the model.</li>
+    </ul>
+    <p>Consequences:</p>
+    <ul>
+      <li>SVMs are often more stable when classes are well-separated (only boundary points matter, outliers don't pull the fit).</li>
+      <li>Logistic regression outputs well-calibrated probabilities out of the box. SVMs don't — you have to add Platt scaling or isotonic regression for probabilities.</li>
+      <li>For almost-linearly-separable data, SVM often wins a hair. For most applied problems, logistic regression with regularization is competitive and simpler.</li>
+    </ul>
+    <div class="callout">In the deep learning era, SVMs aren't the workhorse they were in 2005. They're still great when n is modest, you have structured features, and you care about stability. For big messy data, trees or neural nets usually win.</div>
+  </div>
+
+  <h2>6. Multi-class SVM</h2>
+  <div class="concept">
+    <p>SVMs are born two-class. To do K classes you fit many binary SVMs:</p>
+    <ul>
+      <li><strong>One-vs-one</strong>: $\binom{K}{2}$ pairwise classifiers, then vote.</li>
+      <li><strong>One-vs-all</strong>: K classifiers, each "class k vs everything else," then take the most confident.</li>
+    </ul>
+    <p>Most software does one of these for you. Performance is usually similar.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>What is the margin in an SVM?</strong></div>
+      <div class="fc-back">The perpendicular distance from the decision boundary to the nearest training point. SVMs pick the boundary that maximizes it.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>What are "support vectors"?</strong></div>
+      <div class="fc-back">The training points on the edge of the margin (or inside it, for soft-margin). They're the only points that determine the decision boundary. Moving other points doesn't change the fit.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What does the cost parameter C control?</strong></div>
+      <div class="fc-back">How much margin violation is tolerated. Large C = strict, narrow margin, low bias / high variance. Small C = lenient, wide margin, more bias / less variance.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>Explain the kernel trick in one sentence.</strong></div>
+      <div class="fc-back">Replace dot products with a kernel function, which implicitly computes a dot product in a much higher-dimensional feature space — without ever building that space.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What does γ do in an RBF kernel?</strong></div>
+      <div class="fc-back">Controls how quickly similarity decays with distance. Large γ = only very close points matter (wiggly boundary, overfit risk). Small γ = far points still interact (smoother).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>SVM vs logistic regression — core loss difference?</strong></div>
+      <div class="fc-back">Logistic uses log loss (every point contributes). SVM uses hinge loss (only boundary points contribute; safe points cost zero).</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Why don't SVMs give probabilities natively?</strong></div>
+      <div class="fc-back">They output a signed distance to the boundary, not a probability. You need Platt scaling or isotonic regression to turn those into probabilities.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>Two strategies for multi-class SVM?</strong></div>
+      <div class="fc-back">One-vs-one: fit K(K−1)/2 pairwise classifiers, vote. One-vs-all: K classifiers (each class vs rest), most confident wins.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">Two training points sit in the middle of your class blob, well inside the margin. You delete them. Does your SVM change? Now delete one of the support vectors. What happens?</div>
+  <div class="prompt">You grid-search C and γ. C=100, γ=10 gives zero training error but terrible CV error. What's going on, and which knob do you adjust first?</div>
+
+  <div class="chapter-nav">
+    <a href="ch08.html">← Ch 8</a>
+    <a href="ch10.html">Ch 10 · Deep Learning →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('svmSvg');
+  const slider = document.getElementById('svmC');
+  const out = document.getElementById('svmCReadout');
+  if (!svg) return;
+  const W = 600, H = 300, pad = 30;
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(13);
+  function gauss() { return Math.sqrt(-2 * Math.log(rng())) * Math.cos(2 * Math.PI * rng()); }
+  const pts = [];
+  for (let i = 0; i < 30; i++) pts.push({ x: 0.3 + 0.12 * gauss(), y: 0.4 + 0.12 * gauss(), c: -1 });
+  for (let i = 0; i < 30; i++) pts.push({ x: 0.7 + 0.12 * gauss(), y: 0.6 + 0.12 * gauss(), c: 1 });
+
+  // Simple linear SVM via hinge-loss subgradient descent
+  function fitSVM(C) {
+    let w = [0, 0], b = 0;
+    const lr = 0.01;
+    for (let it = 0; it < 3000; it++) {
+      const lambda = 1 / (C * pts.length);
+      let gw = [lambda * w[0], lambda * w[1]], gb = 0;
+      for (const p of pts) {
+        const m = p.c * (w[0] * p.x + w[1] * p.y + b);
+        if (m < 1) {
+          gw[0] -= p.c * p.x / pts.length;
+          gw[1] -= p.c * p.y / pts.length;
+          gb -= p.c / pts.length;
+        }
+      }
+      w[0] -= lr * gw[0];
+      w[1] -= lr * gw[1];
+      b -= lr * gb;
+    }
+    return { w, b };
+  }
+
+  function render() {
+    const logC = parseFloat(slider.value);
+    const C = Math.pow(10, logC);
+    const { w, b } = fitSVM(C);
+    const X = x => pad + x * (W - 2 * pad);
+    const Y = y => H - pad - y * (H - 2 * pad);
+    // Decision boundary: w0 x + w1 y + b = 0 → y = -(w0 x + b)/w1
+    function lineAt(x, offset) { return -(w[0] * x + b - offset) / (w[1] || 1e-6); }
+    let dots = '';
+    for (const p of pts) {
+      const fill = p.c === -1 ? 'var(--accent)' : '#3a6fb0';
+      dots += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4" fill="${fill}"/>`;
+    }
+    const x0 = 0, x1 = 1;
+    svg.innerHTML = `
+      ${dots}
+      <line x1="${X(x0)}" y1="${Y(lineAt(x0, 0))}" x2="${X(x1)}" y2="${Y(lineAt(x1, 0))}" stroke="var(--ink)" stroke-width="2.5"/>
+      <line x1="${X(x0)}" y1="${Y(lineAt(x0, 1))}" x2="${X(x1)}" y2="${Y(lineAt(x1, 1))}" stroke="var(--ink-3)" stroke-dasharray="4,4"/>
+      <line x1="${X(x0)}" y1="${Y(lineAt(x0, -1))}" x2="${X(x1)}" y2="${Y(lineAt(x1, -1))}" stroke="var(--ink-3)" stroke-dasharray="4,4"/>
+    `;
+    const marginW = 2 / Math.hypot(w[0], w[1]);
+    out.textContent = `C = ${C.toFixed(2)}  ·  margin width ≈ ${marginW.toFixed(2)}`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

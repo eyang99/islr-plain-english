@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 1 · Introduction · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="primer.html">← Primer</a>
+  <a href="ch02.html">Ch 2 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 1</span>
+  <h1 class="serif">Introduction</h1>
+  <p class="subtitle">What "statistical learning" even means, what problems it solves, and the notation that will follow you for the rest of the book.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Statistical learning = teaching a machine to find patterns in data.</h3>
+    <p>You have <em>inputs</em> (things you can measure) and optionally <em>outputs</em> (things you want to predict). Statistical learning is the toolbox for building a mathematical guess about how the inputs relate to the outputs — a guess you can apply to new, unseen data.</p>
+  </div>
+
+  <h2>The two big families</h2>
+  <div class="concept">
+    <h3>Supervised learning — you have labels</h3>
+    <p>You have input/output pairs. You want the machine to learn the mapping so it can predict outputs for new inputs.</p>
+    <ul>
+      <li><strong>Regression</strong> — output is a number. Predict tomorrow's temperature, a house price, a salary.</li>
+      <li><strong>Classification</strong> — output is a category. Is this email spam? Is this image a cat? Will this customer churn?</li>
+    </ul>
+    <div class="analogy">Supervised learning is like studying for a test using <strong>past exams with answer keys</strong>. You see the question, you see the answer, you learn the pattern.</div>
+  </div>
+
+  <div class="concept">
+    <h3>Unsupervised learning — no labels, just data</h3>
+    <p>You have inputs but no "right answer." You want the machine to find structure anyway — clusters, low-dimensional patterns, associations.</p>
+    <ul>
+      <li><strong>Clustering</strong> — group similar observations. "Which customer segments exist in my data?"</li>
+      <li><strong>Dimensionality reduction</strong> — take 500 messy columns and distill them into 3 meaningful ones.</li>
+    </ul>
+    <div class="analogy">Unsupervised learning is being handed a shoebox of <strong>unlabeled photos</strong> and asked to organize them. Nobody told you the categories. You invent them.</div>
+  </div>
+
+  <div class="concept">
+    <h3>A third cousin: semi-supervised</h3>
+    <p>Some labels, mostly not. Real life. ISLR mostly skips this, but it's where most modern ML actually lives.</p>
+  </div>
+
+  <h2>Notation you can't avoid</h2>
+  <div class="concept">
+    <p>The book sticks to a consistent notation. Learn it once, save hours later.</p>
+    <table>
+      <thead><tr><th>Symbol</th><th>Meaning</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>$n$</td><td>Number of observations (rows)</td><td>You have 1000 customers → $n = 1000$</td></tr>
+        <tr><td>$p$</td><td>Number of predictors / features (columns)</td><td>age, income, zip → $p = 3$</td></tr>
+        <tr><td>$X$</td><td>The full $n \times p$ input matrix</td><td>Your spreadsheet minus the target column</td></tr>
+        <tr><td>$x_{ij}$</td><td>Observation $i$, predictor $j$</td><td>Customer 5's age</td></tr>
+        <tr><td>$x_i$</td><td>One observation (a row as a vector)</td><td>Customer 5's full record</td></tr>
+        <tr><td>$X_j$</td><td>One predictor (a column as a vector)</td><td>The full age column</td></tr>
+        <tr><td>$y_i$</td><td>Output for observation $i$</td><td>Did customer 5 churn?</td></tr>
+        <tr><td>$\hat{y}$</td><td>Predicted output (the hat = "estimated")</td><td>Our model's guess</td></tr>
+        <tr><td>$f$</td><td>The true, unknown relationship</td><td>Nature's formula, hidden from us</td></tr>
+        <tr><td>$\hat{f}$</td><td>Our model's approximation of $f$</td><td>Our best guess of nature's formula</td></tr>
+        <tr><td>$\epsilon$</td><td>Irreducible noise</td><td>The part nothing can predict</td></tr>
+      </tbody>
+    </table>
+    <p>The fundamental equation: $Y = f(X) + \epsilon$. There's a true relationship $f$, plus noise $\epsilon$ we can never capture. Our job is to estimate $f$. The noise stays noise.</p>
+  </div>
+
+  <h2>Why statistical learning matters</h2>
+  <div class="concept">
+    <h3>Two jobs: prediction and inference</h3>
+    <div class="two-col">
+      <div>
+        <strong>Prediction</strong>
+        <p>You only care about $\hat{y}$ being accurate. The model can be a black box. Examples: spam filter, product recommendation, image classification. Accuracy wins; interpretability doesn't matter.</p>
+      </div>
+      <div>
+        <strong>Inference</strong>
+        <p>You want to understand <em>how</em> X relates to Y. Which predictors matter? Positive or negative effect? Linear or not? Examples: does this drug lower blood pressure? Which ad channel drives sales? Interpretability matters; raw accuracy is secondary.</p>
+      </div>
+    </div>
+    <div class="callout">Same toolbox, different goals. A simple linear model is great for inference — every coefficient tells a story. A random forest may be more accurate but won't tell you much about <em>why</em>. Pick the tool for the job.</div>
+  </div>
+
+  <h2>What the rest of the book does</h2>
+  <div class="concept">
+    <ol>
+      <li><strong>Ch 2</strong> sets up the theory: bias-variance, training vs test error, the KNN baseline.</li>
+      <li><strong>Ch 3–4</strong> are the workhorses: linear and logistic regression.</li>
+      <li><strong>Ch 5</strong> teaches you to measure a model honestly (cross-validation, bootstrap).</li>
+      <li><strong>Ch 6–7</strong> handle "too many features" (regularization) and "not linear enough" (splines, GAMs).</li>
+      <li><strong>Ch 8–10</strong> are modern muscle: trees, SVMs, neural nets.</li>
+      <li><strong>Ch 11</strong> handles time-to-event data where you don't see every event.</li>
+      <li><strong>Ch 12</strong> is the unsupervised chapter: PCA, clustering.</li>
+      <li><strong>Ch 13</strong> is the "don't fool yourself" chapter: multiple testing.</li>
+    </ol>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Define statistical learning in one sentence.</strong></div>
+      <div class="fc-back">A set of tools for building a mathematical model of how inputs relate to outputs, so you can predict or understand new data.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Supervised vs unsupervised — one-line difference.</strong></div>
+      <div class="fc-back">Supervised has known outputs (labels); unsupervised doesn't. Supervised learns a mapping; unsupervised finds structure.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Regression vs classification.</strong></div>
+      <div class="fc-back">Regression predicts a number (continuous). Classification predicts a category (discrete). Same setup, different output type.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What's the difference between prediction and inference?</strong></div>
+      <div class="fc-back">Prediction: only ŷ accuracy matters, black box fine. Inference: understanding which predictors matter and how; interpretability required.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>What is ε in Y = f(X) + ε?</strong></div>
+      <div class="fc-back">Irreducible error — noise that even the true f can't explain. Sets a floor on how well any model can do.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>n vs p?</strong></div>
+      <div class="fc-back">n = number of observations (rows). p = number of predictors (columns). "n &gt;&gt; p" is easy; "p &gt; n" is the hard problem Ch 6 handles.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>What does the hat in ŷ or f̂ mean?</strong></div>
+      <div class="fc-back">"Estimated" or "predicted." A hat means "this is my guess based on data, not the truth."</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You're given a spreadsheet with customer data and a column "did they buy." Is this supervised or unsupervised? Regression or classification? What's n and p?</div>
+  <div class="prompt">A drug company wants to know which of 20 biomarkers predicts response to a new treatment. Is this a prediction or inference problem? Why does the distinction change which model you'd pick?</div>
+
+  <div class="chapter-nav">
+    <a href="primer.html">← Primer</a>
+    <a href="ch02.html">Ch 2 · Statistical Learning →</a>
+  </div>
+</main>
+</body>
+</html>

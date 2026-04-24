@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 11 · Survival Analysis · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch10.html">← Ch 10</a>
+  <a href="ch12.html">Ch 12 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 11</span>
+  <h1 class="serif">Survival Analysis</h1>
+  <p class="subtitle">Predicting time until an event, when you don't always see the event happen. The trick is handling the observations that are still "waiting."</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Regular regression can't handle "haven't happened yet." Survival analysis can.</h3>
+    <p>When you're studying time-to-event (time to death, to cancer recurrence, to customer churn, to part failure), some subjects haven't had the event when you stop watching. You can't just drop them or assign them infinity. Survival analysis is how you correctly use their partial information.</p>
+  </div>
+
+  <h2>1. Censoring — the reason this chapter exists</h2>
+  <div class="concept">
+    <p>A customer signed up in January. By the time you run the analysis in June, they haven't churned yet. You know they <em>lasted at least 5 months</em>. That's it. This is <strong>right censoring</strong>: the event hasn't occurred by the end of observation.</p>
+    <p>Dropping censored observations throws away real information. Treating their censoring time as the event time pretends they churned when they didn't. Both are wrong. Survival methods use them correctly.</p>
+    <div class="callout">Survival analysis assumes censoring is <strong>uninformative</strong> — unrelated to the risk of the event. If people who are about to churn are <em>more</em> likely to be censored (say, because they stopped logging in and we lost contact), this assumption breaks and estimates are biased.</div>
+  </div>
+
+  <h2>2. The survival function S(t)</h2>
+  <div class="concept">
+    <p>$S(t) = P(T > t)$ — the probability of surviving past time $t$. Starts at 1 at $t=0$, decreases (never increases) over time, approaches 0 as $t \to \infty$ (if the event eventually happens to everyone).</p>
+
+    <h3>The hazard function h(t)</h3>
+    <p>$h(t)$ = instantaneous risk of the event at time $t$, given you've survived until then. "Given you're alive at age 70, what's your risk of dying in the next instant?" That's the hazard at 70.</p>
+    <p>Survival and hazard are two sides of the same coin — each determines the other. The book uses them together because different methods target different ones.</p>
+  </div>
+
+  <h2>3. The Kaplan-Meier estimator</h2>
+  <div class="concept">
+    <p>A non-parametric estimate of $S(t)$. Procedure:</p>
+    <ol>
+      <li>Order the distinct event times.</li>
+      <li>At each event time $t_j$, count how many were "at risk" just before, and how many had the event at that time.</li>
+      <li>Conditional survival at that step = 1 − (events / at-risk).</li>
+      <li>Multiply across all steps to get overall $\hat{S}(t)$.</li>
+    </ol>
+    <p>$$ \hat{S}(t) = \prod_{t_j \leq t} \left(1 - \frac{d_j}{r_j}\right) $$</p>
+    <p>The result is a step function — drops every time an event happens, stays flat otherwise. Censoring doesn't cause a drop; it just removes the subject from the "at-risk" pool.</p>
+
+    <div class="analogy">Imagine a room full of people. At each minute, some leave through door A (the event) or door B (censored). Kaplan-Meier tracks "what fraction of the original room is still there?" counting only door-A exits as real drops.</div>
+  </div>
+
+  <h2>4. The log-rank test</h2>
+  <div class="concept">
+    <p>Compare two survival curves. Null: they come from the same underlying distribution. The log-rank test compares the observed events in each group at each time to what you'd expect under the null.</p>
+    <p>This is the "are treatment and control survival curves different?" test in every clinical trial ever. It's the survival-analysis analog of a t-test.</p>
+  </div>
+
+  <h2>5. Cox proportional hazards model — the workhorse</h2>
+  <div class="concept">
+    <p>You want a regression-style model: how do predictors affect survival? Cox's idea: model the hazard rate as</p>
+    <p>$$ h(t \mid x) = h_0(t) \cdot \exp(\beta_1 x_1 + \dots + \beta_p x_p) $$</p>
+    <p>The baseline hazard $h_0(t)$ is shared and left unspecified (non-parametric). The predictors multiply that baseline hazard. Two subjects have hazards that are proportional at every time — hence "proportional hazards."</p>
+
+    <h3>Reading the coefficients</h3>
+    <p>$e^{\beta_1}$ is the <strong>hazard ratio</strong> for a one-unit increase in $x_1$. If $e^{\beta_1} = 1.5$, that predictor raises the instantaneous event risk by 50% per unit. Hazard ratio = 1 means no effect. Less than 1 means protective.</p>
+
+    <div class="analogy">Cox says "I don't care about the shape of the baseline risk over time. I just want to know how much a given covariate multiplies the risk, whenever you're at risk." You sidestep modeling the time-varying baseline and focus on the relative-risk question most practitioners actually have.</div>
+
+    <h3>Fitting: partial likelihood</h3>
+    <p>Cox exploits a clever trick — at each event time, condition on who was at risk, and ask "among these people, who had the event?" That probability involves only the $\beta$s, not $h_0$. Multiply across event times to get the partial likelihood, then maximize.</p>
+  </div>
+
+  <h2>6. The proportional hazards assumption</h2>
+  <div class="concept">
+    <p>The model assumes hazard ratios are <em>constant over time</em>. A drug's benefit at 6 months equals its benefit at 5 years (proportionally).</p>
+    <p>This is often wrong. Many treatments have effects that fade or grow with time. Check with:</p>
+    <ul>
+      <li>Plot survival curves for subgroups — they should not cross.</li>
+      <li>Scaled Schoenfeld residuals test.</li>
+      <li>Let the coefficient be time-varying if the assumption fails.</li>
+    </ul>
+  </div>
+
+  <h2>7. Machine learning for survival data</h2>
+  <div class="concept">
+    <p>Standard ML models handle continuous y, not censored y. Adaptations:</p>
+    <ul>
+      <li><strong>Survival trees</strong>: split to maximize between-group log-rank statistic.</li>
+      <li><strong>Random survival forests</strong>: ensemble of survival trees.</li>
+      <li><strong>Deep survival models</strong>: neural nets with a Cox-style loss, or discrete-time models predicting event probability per period.</li>
+    </ul>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>What is right censoring?</strong></div>
+      <div class="fc-back">A subject hasn't had the event by the end of observation. You know their survival time is at least their observed time, but not the exact event time.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Why can't you drop censored observations?</strong></div>
+      <div class="fc-back">They carry real information — you know they survived at least some time. Dropping them biases estimates toward shorter survival and loses data.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>What is the survival function S(t)?</strong></div>
+      <div class="fc-back">The probability of surviving past time t. S(0) = 1, decreases monotonically, approaches 0 for eventually-certain events.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What is the hazard function h(t)?</strong></div>
+      <div class="fc-back">The instantaneous rate of the event at time t, given survival to t. "Risk right now, given you've made it this far."</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Describe the Kaplan-Meier estimator.</strong></div>
+      <div class="fc-back">Non-parametric step estimate of S(t). At each event time, multiply current estimate by (1 − events/at-risk). Censored observations leave the at-risk pool without causing a drop.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>What does the log-rank test do?</strong></div>
+      <div class="fc-back">Tests whether two (or more) survival curves come from the same distribution. The survival analog of a t-test.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Write the Cox model.</strong></div>
+      <div class="fc-back">h(t | x) = h₀(t) · exp(β₁x₁ + … + βₚxₚ). Predictors multiply an unspecified baseline hazard. Proportional hazards — ratios constant over time.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>What is a hazard ratio?</strong></div>
+      <div class="fc-back">e^β for a predictor. Ratio of hazards for a 1-unit increase. HR &gt; 1 = higher risk, HR &lt; 1 = protective, HR = 1 = no effect.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">9</span>
+      <div class="fc-front"><strong>Why is Cox "semi-parametric"?</strong></div>
+      <div class="fc-back">It's parametric in the covariates (βs) but non-parametric in the baseline hazard h₀(t) — you never have to specify its shape.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">10</span>
+      <div class="fc-front"><strong>What breaks the Cox model's key assumption?</strong></div>
+      <div class="fc-back">When hazard ratios change over time (e.g., treatment effect fades). Check with survival plots or Schoenfeld residuals; allow time-varying coefficients if violated.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">A churn model predicts "months until churn" using linear regression. What goes wrong if you have a lot of customers who haven't churned yet?</div>
+  <div class="prompt">A Cox model gives hazard ratio 0.7 (p=0.001) for a new drug. Does that mean patients on the drug live 30% longer? What does it actually mean?</div>
+
+  <div class="chapter-nav">
+    <a href="ch10.html">← Ch 10</a>
+    <a href="ch12.html">Ch 12 · Unsupervised Learning →</a>
+  </div>
+</main>
+</body>
+</html>

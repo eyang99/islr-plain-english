@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ch 5 · Resampling · ISLR plain English</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="brand">← ISLR · plain English</a>
+  <a href="primer.html">Stats primer</a>
+  <span class="spacer"></span>
+  <a href="ch04.html">← Ch 4</a>
+  <a href="ch06.html">Ch 6 →</a>
+</nav>
+
+<main class="wrap">
+  <span class="chip">Chapter 5</span>
+  <h1 class="serif">Resampling Methods</h1>
+  <p class="subtitle">Honest ways to measure a model's test performance without a separate test set, and honest ways to quantify uncertainty without hard math.</p>
+
+  <div class="card big-idea">
+    <span class="chip">Big idea</span>
+    <h3 style="margin-top:10px">Pretend you have more data than you do by reusing your data cleverly.</h3>
+    <p>Cross-validation pretends you have a test set by holding pieces out in turn. The bootstrap pretends you have many datasets by resampling with replacement. Both substitute computation for data — the trade the whole field rests on.</p>
+  </div>
+
+  <h2>1. The problem</h2>
+  <div class="concept">
+    <p>You want to estimate <strong>test error</strong> (how your model does on new data) but you only have one dataset. If you train and evaluate on the same data, you get an optimistically biased estimate (your model has seen everything). If you save a chunk as a test set, you're throwing away training data you can't afford to lose.</p>
+    <p>Cross-validation solves this with a rotating hold-out. The bootstrap handles a different problem: estimating the standard error of anything, not just a mean.</p>
+  </div>
+
+  <h2>2. Validation set approach — the naive start</h2>
+  <div class="concept">
+    <p>Split data randomly into two halves: train on one, test on the other. Simple. Problems:</p>
+    <ul>
+      <li><strong>High variance.</strong> A different random split gives a different estimate.</li>
+      <li><strong>Less training data.</strong> Model is fit on half the data, so it's worse than what you'd actually deploy.</li>
+    </ul>
+    <p>Good as a teaching stepping stone. Don't use it in practice unless your dataset is huge.</p>
+  </div>
+
+  <h2>3. Leave-One-Out Cross-Validation (LOOCV)</h2>
+  <div class="concept">
+    <p>Take out exactly one observation. Train on the remaining n−1. Predict the held-out one. Record the squared error. Repeat for every observation. Average.</p>
+    <p>$$ CV_{(n)} = \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i^{(-i)})^2 $$</p>
+    <p><strong>Pros</strong>: nearly unbiased (each model uses almost all the data).</p>
+    <p><strong>Cons</strong>: expensive (n model fits). High variance because the n fitted models are nearly identical — highly correlated — so averaging them reduces variance less than you'd hope.</p>
+    <div class="callout ok">For least-squares linear regression, LOOCV has a <em>closed form</em> using the hat matrix — you fit the model once. For most other models, you have to actually do n fits.</div>
+  </div>
+
+  <h2>4. k-fold cross-validation — the one you'll actually use</h2>
+  <div class="concept">
+    <p>Split the data randomly into k equal folds. For each fold: hold it out, train on the other k−1, predict, record. Average the k errors.</p>
+    <p>Typical choices: <strong>k = 5 or 10</strong>. The bias-variance trade-off of k itself:</p>
+    <ul>
+      <li>Small k (e.g., 2 or 3): more bias (each fold is trained on less data), less variance.</li>
+      <li>Large k (e.g., n = LOOCV): less bias, more variance (highly correlated fold errors).</li>
+      <li>k = 5 or 10 hits a sweet spot empirically.</li>
+    </ul>
+
+    <div class="viz">
+      <div class="controls">
+        <label>k: <input type="range" id="kSlider" min="2" max="10" value="5"/></label>
+        <span class="readout" id="kReadout">k = 5</span>
+      </div>
+      <svg id="cvSvg" viewBox="0 0 600 200" aria-label="k-fold cross-validation"></svg>
+      <p class="tagline">Each row is one iteration. Orange = test fold this iteration, gray = training. Every observation is in the test fold exactly once across the k rows.</p>
+    </div>
+  </div>
+
+  <h2>5. CV for classification</h2>
+  <div class="concept">
+    <p>Same idea, but instead of MSE you average misclassification rates (or log-loss, or AUC, depending on what you optimize). Use <strong>stratified</strong> folds so class proportions match in each fold — critical for imbalanced data.</p>
+
+    <div class="callout warn">
+      <strong>Gotcha:</strong> if you do feature selection, scaling, or any choice <em>using the full dataset</em> before CV, you've leaked test information into training. The correct pattern: <em>every</em> preprocessing step goes inside the CV loop.
+    </div>
+  </div>
+
+  <h2>6. The bootstrap</h2>
+  <div class="concept">
+    <p>Different problem: you have an estimate (a mean, a coefficient, a portfolio weight) and you want its standard error — but you don't have a clean formula. The bootstrap is the computational hammer.</p>
+
+    <h3>The recipe</h3>
+    <ol>
+      <li>Your dataset has n observations.</li>
+      <li>Draw a "bootstrap sample" by sampling <em>n times with replacement</em> from it. Some observations appear twice, others not at all.</li>
+      <li>Compute your statistic on this bootstrap sample. Record it.</li>
+      <li>Repeat 1000+ times.</li>
+      <li>The standard deviation of your recorded statistics = bootstrap estimate of the SE.</li>
+    </ol>
+
+    <div class="analogy">Imagine you only got to do the study once, but God shrugged and said "fine, I'll let you resample from your own sample, but don't tell anyone." The bootstrap fakes having many datasets by shuffling the one you have — with replacement, so you actually get variation.</div>
+
+    <div class="viz">
+      <div class="controls">
+        <button id="bootBtn" style="padding:6px 12px;border:1px solid var(--rule);background:var(--surface);border-radius:8px;cursor:pointer">Run 1000 bootstrap replicates</button>
+        <span class="readout" id="bootReadout">Sample mean = ? (click button)</span>
+      </div>
+      <svg id="bootSvg" viewBox="0 0 600 220" aria-label="Bootstrap distribution"></svg>
+      <p class="tagline">Histogram of bootstrap means from a fixed sample of 30 points. The spread of this histogram approximates the sampling distribution of the mean.</p>
+    </div>
+
+    <h3>Why it's almost magic</h3>
+    <p>Most parametric SE formulas require you to know the underlying distribution (Gaussian, etc.). The bootstrap doesn't. It works for medians, correlations, ratios, regression coefficients, nearly anything. As long as the plug-in principle holds (your data is representative), the bootstrap gives you sensible uncertainty.</p>
+
+    <div class="callout warn">The bootstrap is <strong>not</strong> a great replacement for cross-validation when estimating test error. In a bootstrap sample, ~37% of original observations are missing — but many observations appear multiple times in both "training" and "evaluation," which contaminates the error estimate. Use k-fold CV for test error; use bootstrap for standard errors.</div>
+  </div>
+
+  <h2>7. One-sentence mental model</h2>
+  <div class="card big-idea">
+    <p><strong>Cross-validation</strong> answers "how well will my model generalize?" <strong>Bootstrap</strong> answers "how uncertain is this estimate?" Both reuse the data to give you something that used to require more data.</p>
+  </div>
+
+  <div class="flashcards" tabindex="0">
+    <h2>Flashcards</h2>
+    <div class="flashcard"><span class="fc-label">1</span>
+      <div class="fc-front"><strong>Why is training error a bad estimate of test error?</strong></div>
+      <div class="fc-back">The model has already seen those points. A flexible enough model can drive training error to zero while generalizing poorly. Training error is optimistically biased.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">2</span>
+      <div class="fc-front"><strong>Describe LOOCV in two lines.</strong></div>
+      <div class="fc-back">For each observation i: train on the other n−1, predict y_i, record error. Average across all n. Nearly unbiased but computationally expensive.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">3</span>
+      <div class="fc-front"><strong>Why do practitioners prefer k=5 or k=10 over LOOCV?</strong></div>
+      <div class="fc-back">Lower variance in the estimate (folds are less correlated), cheaper to compute, and in practice the small bias increase doesn't matter much.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">4</span>
+      <div class="fc-front"><strong>What's the common CV mistake that leaks test data?</strong></div>
+      <div class="fc-back">Doing feature selection, normalization, or hyperparameter search on the full dataset before CV. All preprocessing must happen inside each fold's training step.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">5</span>
+      <div class="fc-front"><strong>Describe the bootstrap in three lines.</strong></div>
+      <div class="fc-back">Sample n observations with replacement from your dataset. Compute your statistic on the resample. Repeat 1000+ times. The SD of those statistics is the bootstrap SE.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">6</span>
+      <div class="fc-front"><strong>Why is the bootstrap so general?</strong></div>
+      <div class="fc-back">It doesn't need a distributional assumption. Works for any statistic as long as the sample is representative — means, medians, correlations, regression coefs, anything.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">7</span>
+      <div class="fc-front"><strong>Why shouldn't you use bootstrap for test-error estimation?</strong></div>
+      <div class="fc-back">About 37% of original observations are missing from each bootstrap sample, but many overlap between "train" and "test." The overlap makes the error estimate biased low. Use k-fold CV instead.</div>
+    </div>
+    <div class="flashcard"><span class="fc-label">8</span>
+      <div class="fc-front"><strong>CV vs bootstrap — one-line difference.</strong></div>
+      <div class="fc-back">CV estimates how well a model generalizes. Bootstrap estimates the uncertainty in a specific computed statistic.</div>
+    </div>
+  </div>
+
+  <h3>Explain it back</h3>
+  <div class="prompt">You do feature selection (pick top 20 of 1000 features by correlation with Y), then run 10-fold CV on those 20 features. Your error looks great. Why is the number wrong?</div>
+  <div class="prompt">Your coworker says "my bootstrap CI for the correlation is [0.1, 0.9], so there's a 95% probability the true correlation is in that range." What's off?</div>
+
+  <div class="chapter-nav">
+    <a href="ch04.html">← Ch 4</a>
+    <a href="ch06.html">Ch 6 · Model Selection & Regularization →</a>
+  </div>
+</main>
+
+<script>
+(function() {
+  const svg = document.getElementById('cvSvg');
+  const slider = document.getElementById('kSlider');
+  const out = document.getElementById('kReadout');
+  if (!svg) return;
+  const W = 600, H = 200, pad = 20;
+
+  function render() {
+    const k = parseInt(slider.value, 10);
+    const rowH = (H - 2 * pad) / k;
+    const cellW = (W - 2 * pad) / 20; // 20 "observations" visually
+    let cells = '';
+    for (let i = 0; i < k; i++) {
+      const testStart = Math.floor(i * 20 / k);
+      const testEnd = Math.floor((i + 1) * 20 / k);
+      for (let j = 0; j < 20; j++) {
+        const isTest = j >= testStart && j < testEnd;
+        const fill = isTest ? 'var(--accent)' : 'var(--surface-2)';
+        cells += `<rect x="${pad + j * cellW}" y="${pad + i * rowH}" width="${cellW - 1}" height="${rowH - 2}" fill="${fill}" stroke="var(--rule)"/>`;
+      }
+      cells += `<text x="${pad - 6}" y="${pad + i * rowH + rowH / 2 + 3}" text-anchor="end" font-size="10" fill="var(--ink-3)">iter ${i + 1}</text>`;
+    }
+    svg.innerHTML = cells;
+    out.textContent = `k = ${k}  ·  ${k} model fits  ·  each obs in test fold exactly once`;
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+
+(function() {
+  const svg = document.getElementById('bootSvg');
+  const btn = document.getElementById('bootBtn');
+  const out = document.getElementById('bootReadout');
+  if (!svg) return;
+  const W = 600, H = 220, pad = 30;
+
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rng = mulberry32(23);
+  // Fixed sample of 30 from an exponential
+  const sample = [];
+  for (let i = 0; i < 30; i++) sample.push(-Math.log(1 - rng()));
+  const sampleMean = sample.reduce((s, x) => s + x, 0) / sample.length;
+
+  btn.addEventListener('click', () => {
+    const rng2 = mulberry32(Date.now() & 0xffff);
+    const means = [];
+    for (let b = 0; b < 1000; b++) {
+      let s = 0;
+      for (let i = 0; i < 30; i++) s += sample[Math.floor(rng2() * 30)];
+      means.push(s / 30);
+    }
+    const min = Math.min(...means), max = Math.max(...means);
+    const bins = 40;
+    const binw = (max - min) / bins;
+    const h = new Array(bins).fill(0);
+    for (const m of means) {
+      let b = Math.floor((m - min) / binw);
+      if (b < 0) b = 0; if (b >= bins) b = bins - 1;
+      h[b]++;
+    }
+    const maxH = Math.max(...h);
+    const bw = (W - 2 * pad) / bins;
+    let bars = '';
+    for (let i = 0; i < bins; i++) {
+      const bh = (h[i] / maxH) * (H - 2 * pad);
+      bars += `<rect x="${pad + i * bw}" y="${H - pad - bh}" width="${bw - 1}" height="${bh}" fill="var(--accent)" opacity="0.7"/>`;
+    }
+    const mean = means.reduce((s, m) => s + m, 0) / means.length;
+    const se = Math.sqrt(means.reduce((s, m) => s + (m - mean) ** 2, 0) / means.length);
+    const cx = pad + (mean - min) / (max - min) * (W - 2 * pad);
+    svg.innerHTML = `
+      ${bars}
+      <line x1="${cx}" y1="${pad}" x2="${cx}" y2="${H - pad}" stroke="var(--ink)" stroke-dasharray="3,3"/>
+      <line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--ink-3)"/>
+      <text x="${W - pad}" y="${H - pad - 6}" text-anchor="end" font-size="11" fill="var(--ink-3)">bootstrap means</text>
+    `;
+    out.textContent = `Original sample mean = ${sampleMean.toFixed(3)}  ·  bootstrap SE ≈ ${se.toFixed(3)}`;
+  });
+})();
+</script>
+</body>
+</html>
